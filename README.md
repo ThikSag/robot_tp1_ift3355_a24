@@ -5,6 +5,8 @@ Voici une brève explication du projet en attendant que je puisses en faire une 
 
 Dans ce projet, il fallait compléter un robot, le faire marcher et le faire regarder un point indiqué par la souris. Il fallait aussi compléter les fonctions de transformation qui permettent au robot de bouger.
 
+La branche "main" contient le code que ma coéquipière et moi avons remis pour l'évaluation de ce projet scolaire. La branche "original_files" contient les fichiers originaux qui nous ont été remis par notre professeur pour réaliser ce project.
+
 Malheureusement, le projet ne peut pas être lancé simplement en exécutant le fichier "A1.html". Dans notre cours, nous utilisions l'IDE WebStorm pour lancer le projet sans problème.
 
 ## Procédure pour lancer le projet :
