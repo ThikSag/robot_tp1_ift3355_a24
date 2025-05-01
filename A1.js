@@ -5,6 +5,7 @@ THREE.Object3D.prototype.setMatrix = function(a) {
 };
 
 var start = Date.now();
+
 // SETUP RENDERER AND SCENE
 var scene = new THREE.Scene();
 var renderer = new THREE.WebGLRenderer();
@@ -45,77 +46,99 @@ scene.add(floor);
 
 // TRANSFORMATIONS
 
+/**
+ * Multiplies m1 x m2.
+ * @param m1 : THREE.Matrix4
+ * @param m2 : THREE.Matrix4
+ * @returns {THREE.Matrix4} The resulting matrix as a new matrix.
+ */
 function multMat(m1, m2){
   return new THREE.Matrix4().multiplyMatrices(m1, m2);
 }
 
+/**
+ * Inverts matrix 'm'. If the determinant of matrix 'm' is 0, matrix 'm' can't be
+ * inverted and a zero matrix is returned instead.
+ * @param m : THREE.Matrix4 The matrix to be inverted.
+ * @returns {THREE.Matrix4} The resulting matrix as a new matrix.
+ */
 function inverseMat(m){
   return new THREE.Matrix4().getInverse(m, true);
 }
 
+/**
+ * Creates an identity matrix.
+ * @returns {THREE.Matrix4}
+ */
 function idMat4() {
-  // Create Identity matrix
   let m = new THREE.Matrix4();
 
-  m.set(1,0,0,0,
-        0,1,0,0,
-        0,0,1,0,
-        0,0,0,1);
+  m.set(1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1);
 
   return m;
 }
 
+/**
+ * Applies a translation [x, y, z] to 'matrix'.
+ * @param matrix : THREE.Matrix4 The matrix to be translated.
+ * @param x : float The translation to be applied on the X axis.
+ * @param y : float The translation to be applied on the Y axis.
+ * @param z : float The translation to be applied on the Z axis.
+ * @returns {THREE.Matrix4} The resulting matrix as a new matrix.
+ */
 function translateMat(matrix, x, y, z) {
-  // Apply translation [x, y, z] to @matrix
-  // matrix: THREE.Matrix4
-  // x, y, z: float
-
   let m = new THREE.Matrix4();
 
-  m.set(1,0,0,x,
-        0,1,0,y,
-        0,0,1,z,
-        0,0,0,1);
+  m.set(1, 0, 0, x,
+        0, 1, 0, y,
+        0, 0, 1, z,
+        0, 0, 0, 1);
 
   return multMat(m, matrix);
 }
 
+/**
+ * Applies a rotation to 'matrix' by 'angle' with respect to 'axis'.
+ * @param matrix : THREE.Matrix4 The matrix to be rotated.
+ * @param angle : float The angle of the rotation in radian.
+ * @param axis : string The axis 'x', 'y' or 'z' on which the rotation is made. If it's not
+ *                      one of these 3 options, then no rotation is made.
+ * @returns {THREE.Matrix4} The resulting matrix as a new matrix.
+ */
 function rotateMat(matrix, angle, axis){
-  // Apply rotation by @angle with respect to @axis to @matrix
-  // matrix: THREE.Matrix3 -- ERREUR : devrait être THREE.Matrix4
-  // angle: float
-  // axis: string "x", "y" or "z"
-
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   let m = new THREE.Matrix4();
 
-  // Set la matrice de rotation selon l'axe (axis) choisi.
+  // Set the rotation matrix based on the chosen axis.
   switch (axis) {
     case "x":
-      m.set(1,0,0,0,
-            0,cos,-sin,0,
-            0,sin,cos,0,
-            0,0,0,1);
+      m.set(1, 0,   0,    0,
+            0, cos, -sin, 0,
+            0, sin, cos,  0,
+            0, 0,   0,    1);
       break;
 
     case "y":
-      m.set(cos,0,sin,0,
-            0,1,0,0,
-            -sin,0,cos,0,
-            0,0,0,1);
+      m.set(cos,  0, sin, 0,
+            0,    1, 0,   0,
+            -sin, 0, cos, 0,
+            0,    0, 0,   1);
       break;
 
     case "z":
-      m.set(cos,-sin,0,0,
-            sin,cos,0,0,
-            0,0,1,0,
-            0,0,0,1);
+      m.set(cos, -sin, 0, 0,
+            sin, cos,  0, 0,
+            0,   0,    1, 0,
+            0,   0,    0, 1);
       break;
 
-    default: 
-      // Si jamais axis ne correspond a aucun axe en 3D, alors aucune rotation n'est faite.
-      // On utilise la matrice identité dans ce cas là.
+    default:
+      // If 'axis' isn't a valid 3D axis, then no rotation is made.
+      // In that case, the identity matrix is used.
       m = idMat4();
       break;
   }
@@ -123,42 +146,45 @@ function rotateMat(matrix, angle, axis){
   return multMat(m, matrix);
 }
 
+/**
+ * Applies a rotation to vector 'v' by 'angle' with respect to 'axis'.
+ * @param v : THREE.Vector3
+ * @param angle : float The angle of the rotation in radian.
+ * @param axis : string The axis 'x', 'y' or 'z' on which the rotation is made. If it's not
+ *                      one of these 3 options, then no rotation is made.
+ * @returns {THREE.Vector3} The resulting vector as a new vector.
+ */
 function rotateVec3(v, angle, axis){
-  // Apply rotation by @angle with respect to @axis to vector @v
-  // v: THREE.Vector3
-  // angle: float
-  // axis: string "x", "y" or "z"
-
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   let m = new THREE.Matrix4();
 
-  // Set la matrice de rotation selon l'axe (axis) choisi.
+  // Set the rotation matrix based on the chosen axis.
   switch (axis) {
     case "x":
-      m.set(1,0,0,0,
-            0,cos,-sin,0,
-            0,sin,cos,0,
-            0,0,0,1);
+      m.set(1, 0,   0,    0,
+            0, cos, -sin, 0,
+            0, sin, cos,  0,
+            0, 0,   0,    1);
       break;
 
     case "y":
-      m.set(cos,0,sin,0,
-            0,1,0,0,
-            -sin,0,cos,0,
-            0,0,0,1);
+      m.set(cos,  0, sin, 0,
+            0,    1, 0,   0,
+            -sin, 0, cos, 0,
+            0,    0, 0,   1);
       break;
 
     case "z":
-      m.set(cos,-sin,0,0,
-            sin,cos,0,0,
-            0,0,1,0,
-            0,0,0,1);
+      m.set(cos, -sin, 0, 0,
+            sin, cos,  0, 0,
+            0,   0,    1, 0,
+            0,   0,    0, 1);
       break;
 
-    default: 
-      // Si jamais axis ne correspond a aucun axe en 3D, alors aucune rotation n'est faite.
-      // On utilise la matrice identité dans ce cas là.
+    default:
+      // If 'axis' isn't a valid 3D axis, then no rotation is made.
+      // In that case, the identity matrix is used.
       m = idMat4();
       break;
   }
@@ -171,21 +197,29 @@ function rotateVec3(v, angle, axis){
   return rv;
 }
 
+/**
+ * Applies a scaling [x, y, z] to 'matrix'.
+ * @param matrix : THREE.Matrix4 The matrix to be scaled.
+ * @param x : float The scaling to be applied on the X axis.
+ * @param y : float The scaling to be applied on the Y axis.
+ * @param z : float The scaling to be applied on the Z axis.
+ * @returns {THREE.Matrix4} The resulting matrix as a new matrix.
+ */
 function rescaleMat(matrix, x, y, z){
-  // Apply scaling @x, @y and @z to @matrix
-  // matrix: THREE.Matrix3 -- ERREUR : devrait être THREE.Matrix4
-  // x, y, z: float
-
   const m = new THREE.Matrix4().set(x, 0, 0, 0,
-      0, y, 0, 0,
-      0, 0, z, 0,
-      0, 0, 0, 1);
+                                    0, y, 0, 0,
+                                    0, 0, z, 0,
+                                    0, 0, 0, 1);
 
   return multMat(m, matrix);
 }
 
+/**
+ * Corrects an angle by rounding it to the second decimal.
+ * @param angle : number
+ * @returns {number}
+ */
 function correctAngle(angle) {
-  // Correction d'un angle pour l'avoir arrondi à 2 chiffres après la virgule
   return Math.round(angle * 100) / 100 ;
 }
 
@@ -197,14 +231,14 @@ class Robot {
     this.headRadius = 0.32;
     // Add parameters for parts
 
-    // Paramètres additionnels du torse et de la tête pour la fonction look_at
+    // Additional parameters of the torso and the head for the look_at function
     this.torsoAngle = 0;
     this.headAngleX = 0;
     this.headAngleY = 0;
     this.pi = correctAngle(Math.PI);
     this.headAngleMax = this.pi/2;
 
-    // Paramètres des bras
+    // Arms parameters
     this.brasHeight = 0.6;
     this.brasRadius = 0.15;
     this.brasGAngleZ =0;
@@ -212,27 +246,27 @@ class Robot {
     this.brasDAngleZ =0;
     this.brasDAngleX =0;
 
-    // Paramètres des avant-bras
+    // Forearms parameters
     this.avantBrasRadius = 0.12;
     this.avantBrasHeight = 0.4;
     this.avantBrasGAngle=0;
     this.avantBrasDAngle=0;
 
-    // Paramètres des cuisses
+    // Thighs parameters
     this.cuisseHeight = 0.9;
     this.cuisseRadius = 0.3;
     this.cuisseAngleMax = 2.4;
     this.cuisseGAngle = 0;
     this.cuisseDAngle = 0;
 
-    // Paramètre des jambes
+    // Legs parameters
     this.jambeHeight = 0.7;
     this.jambeRadius = 0.2;
     this.jambeAngleMax = 1.5;
     this.jambeGAngle = 0;
     this.jambeDAngle = 0;
 
-    // Paramètre des yeux
+    // Eyes parameters
     this.yeuxRadius = 0.08;
 
     // Animation
@@ -1423,14 +1457,14 @@ var components = [
   "Torso",
   "Head",
   // Add parts names
-  "Bras Gauche",
-  "Avant-Bras Gauche",
-  "Bras Droit",
-  "Avant-Bras Droit",
-  "Cuisse Gauche",
-  "Jambe Gauche",
-  "Cuisse Droite",
-  "Jambe Droite"
+  "Left Arm",
+  "Left Forearm",
+  "Right Arm",
+  "Right Forearm",
+  "Left Thigh",
+  "Left Leg",
+  "Right Thigh",
+  "Right Leg",
 ];
 var numberComponents = components.length;
 
@@ -1484,31 +1518,31 @@ function checkKeyboard() {
         robot.rotateHead(-0.1, "x");
         break;
       // Add more cases
-      case "Bras Gauche":
+      case "Left Arm":
         robot.rotateBrasGauche(-0.1, "y");
         break;
-      case "Avant-Bras Gauche":
+      case "Left Forearm":
         robot.rotateAvantBrasGauche(-0.1);
         break;
-      case "Bras Droit":
+      case "Right Arm":
         robot.rotateBrasDroit(-0.1,"y");
         break;
-      case "Avant-Bras Droit":
+      case "Right Forearm":
         robot.rotateAvantBrasDroit(-0.1);
         break;
-      case "Cuisse Gauche":
+      case "Left Thigh":
         robot.enAnimationMarche = false;
         robot.rotateCuisseGauche(-0.1);
         break;
-      case "Jambe Gauche":
+      case "Left Leg":
         robot.enAnimationMarche = false;
         robot.rotateJambeGauche(-0.1);
         break;
-      case "Cuisse Droite":
+      case "Right Thigh":
         robot.enAnimationMarche = false;
         robot.rotateCuisseDroite(-0.1);
         break;
-      case "Jambe Droite":
+      case "Right Leg":
         robot.enAnimationMarche = false;
         robot.rotateJambeDroite(-0.1);
         break;
@@ -1525,31 +1559,31 @@ function checkKeyboard() {
         robot.rotateHead(0.1, "x");
         break;
       // Add more cases
-      case "Bras Gauche":
+      case "Left Arm":
         robot.rotateBrasGauche(0.1, "y");
         break;
-      case "Avant-Bras Gauche":
+      case "Left Forearm":
         robot.rotateAvantBrasGauche(0.1);
         break;
-      case "Bras Droit":
+      case "Right Arm":
         robot.rotateBrasDroit(0.1,"y");
         break;
-      case "Avant-Bras Droit":
+      case "Right Forearm":
         robot.rotateAvantBrasDroit(0.1);
         break;
-      case "Cuisse Gauche":
+      case "Left Thigh":
         robot.enAnimationMarche = false;
         robot.rotateCuisseGauche(0.1);
         break;
-      case "Jambe Gauche":
+      case "Left Leg":
         robot.enAnimationMarche = false;
         robot.rotateJambeGauche(0.1);
         break;
-      case "Cuisse Droite":
+      case "Right Thigh":
         robot.enAnimationMarche = false;
         robot.rotateCuisseDroite(0.1);
         break;
-      case "Jambe Droite":
+      case "Right Leg":
         robot.enAnimationMarche = false;
         robot.rotateJambeDroite(0.1);
         break;
@@ -1566,23 +1600,23 @@ function checkKeyboard() {
         robot.rotateHead(0.1, "y");
         break;
       // Add more cases
-      case "Bras Gauche":
+      case "Left Arm":
         robot.rotateBrasGauche(-0.1, "z");
         break;
-      case "Avant-Bras Gauche":
+      case "Left Forearm":
         break;
-      case "Bras Droit":
+      case "Right Arm":
         robot.rotateBrasDroit(-0.1, "z");
         break;
-      case "Avant-Bras Droit":
+      case "Right Forearm":
         break;
-      case "Cuisse Gauche":
+      case "Left Thigh":
         break;
-      case "Jambe Gauche":
+      case "Left Leg":
         break;
-      case "Cuisse Droite":
+      case "Right Thigh":
         break;
-      case "Jambe Droite":
+      case "Right Leg":
         break;
     }
   }
@@ -1597,23 +1631,23 @@ function checkKeyboard() {
         robot.rotateHead(-0.1, "y");
         break;
       // Add more cases
-      case "Bras Gauche":
+      case "Left Arm":
         robot.rotateBrasGauche(0.1, "z");
         break;
-      case "Avant-Bras Gauche":
+      case "Left Forearm":
         break;
-      case "Bras Droit":
+      case "Right Arm":
         robot.rotateBrasDroit(0.1, "z");
         break;
-      case "Avant-Bras Droit":
+      case "Right Forearm":
         break;
-      case "Cuisse Gauche":
+      case "Left Thigh":
         break;
-      case "Jambe Gauche":
+      case "Left Leg":
         break;
-      case "Cuisse Droite":
+      case "Right Thigh":
         break;
-      case "Jambe Droite":
+      case "Right Leg":
         break;
     }
   }
