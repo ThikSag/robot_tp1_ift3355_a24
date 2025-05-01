@@ -62,7 +62,7 @@ function multMat(m1, m2){
  * @param m : THREE.Matrix4 The matrix to be inverted.
  * @returns {THREE.Matrix4} The resulting matrix as a new matrix.
  */
-function inverseMat(m){
+function invertMat(m){
   return new THREE.Matrix4().getInverse(m, true);
 }
 
@@ -223,60 +223,63 @@ function correctAngle(angle) {
   return Math.round(angle * 100) / 100 ;
 }
 
+/**
+ * This class represents the robot that we will create and animate in the 3D world.
+ */
 class Robot {
   constructor() {
-    // Geometry
+    this.pi = correctAngle(Math.PI);  // Value of pi that we will be using
+
+    // Torso parameters
     this.torsoHeight = 1.5;
-    this.torsoRadius = 0.75;
-    this.headRadius = 0.32;
-    // Add parameters for parts
+    this.torsoRadius = 0.75;  // Depth of the torso, 2x Radius = Width of the torso
+    this.torsoAngle = 0;  // Current angle of the torso rotation
 
-    // Additional parameters of the torso and the head for the look_at function
-    this.torsoAngle = 0;
-    this.headAngleX = 0;
-    this.headAngleY = 0;
-    this.pi = correctAngle(Math.PI);
-    this.headAngleMax = this.pi/2;
-
-    // Arms parameters
-    this.brasHeight = 0.6;
-    this.brasRadius = 0.15;
-    this.brasGAngleZ =0;
-    this.brasGAngleX =0;
-    this.brasDAngleZ =0;
-    this.brasDAngleX =0;
-
-    // Forearms parameters
-    this.avantBrasRadius = 0.12;
-    this.avantBrasHeight = 0.4;
-    this.avantBrasGAngle=0;
-    this.avantBrasDAngle=0;
-
-    // Thighs parameters
-    this.cuisseHeight = 0.9;
-    this.cuisseRadius = 0.3;
-    this.cuisseAngleMax = 2.4;
-    this.cuisseGAngle = 0;
-    this.cuisseDAngle = 0;
-
-    // Legs parameters
-    this.jambeHeight = 0.7;
-    this.jambeRadius = 0.2;
-    this.jambeAngleMax = 1.5;
-    this.jambeGAngle = 0;
-    this.jambeDAngle = 0;
+    // Head parameters
+    this.headRadius = 0.32;  // Height and depth of the head, 2x Radius = Width of the head
+    this.headAngleMax = this.pi/2;  // Maximum angle of the head rotation
+    this.headAngleX = 0;  // Current angle of the head rotation on the X axis
+    this.headAngleY = 0;  // Current angle of the head rotation on the Y axis
 
     // Eyes parameters
-    this.yeuxRadius = 0.08;
+    this.eyesRadius = 0.08;
 
-    // Animation
-    this.walkDirection = new THREE.Vector3( 0, 0, 1 );
-    this.enAnimationMarche = true;
-    this.premierPas = true;
-    this.cuisseGMonte = false;
-    this.cuisseDMonte = true;
-    this.jambeGMonte = false;
-    this.jambeDMonte = false;
+    // Arms parameters
+    this.ArmsHeight = 0.6;
+    this.ArmsRadius = 0.15;
+    this.ArmLAngleZ = 0;  // Current angle of the left arm rotation on the Z axis
+    this.ArmLAngleY = 0;  // Current angle of the left arm rotation on the Y axis
+    this.ArmRAngleZ = 0;  // Current angle of the right arm rotation on the Z axis
+    this.ArmRAngleY = 0;  // Current angle of the right arm rotation on the Y axis
+
+    // Forearms parameters
+    this.forearmsHeight = 0.4;
+    this.forearmsRadius = 0.12;
+    this.forearmLAngle = 0;  // Current angle of the left forearm rotation
+    this.forearmRAngle = 0;  // Current angle of the right forearm rotation
+
+    // Thighs parameters
+    this.thighsHeight = 0.9;
+    this.thighsRadius = 0.3;
+    this.thighsAngleMax = 2.4;  // Maximum angle of the thighs rotation
+    this.thighLAngle = 0;  // Current angle of the left thigh rotation
+    this.thighRAngle = 0;  // Current angle of the right thigh rotation
+
+    // Legs parameters
+    this.legsHeight = 0.7;
+    this.legsRadius = 0.2;
+    this.legsAngleMax = 1.5;  // Maximum angle of the legs rotation
+    this.legLAngle = 0;  // Current angle of the left leg rotation
+    this.legRAngle = 0;  // Current angle of the right leg rotation
+
+    // Walking animation parameters
+    this.walkDirection = new THREE.Vector3( 0, 0, 1 );  // Current walking direction
+    this.inWalkAnimation = true;  // Indicates if the robot is in the walking animation
+    this.firstStepAnim = true;  // Indicates if it's the first step of the walking animation
+    this.thighLGoUp = false;  // Indicates if the left thigh is going up in the walking animation
+    this.thighRGoUp = true;  // Indicates if the right thigh is going up in the walking animation
+    this.legLGoUp = false;  // Indicates if the left leg is going up in the walking animation
+    this.legRGoUp = false;  // Indicates if the right leg is going up in the walking animation
 
     // Material
     this.material = new THREE.MeshNormalMaterial();
@@ -285,39 +288,69 @@ class Robot {
     this.initialize()
   }
 
+  // Methods for initializing the robot
+
+  /**
+   * Creates the initial transformation matrix for the torso of the robot. This matrix
+   * moves the torso from the origin of the world to its initial position in the world.
+   * @returns {THREE.Matrix4}
+   */
   initialTorsoMatrix(){
+    const deltaY = this.torsoHeight/2 + this.thighsHeight + this.legsHeight;
+
     let initialTorsoMatrix = idMat4();
-    const deltaY = this.torsoHeight / 2 + this.cuisseHeight + this.jambeHeight;
     initialTorsoMatrix = translateMat(initialTorsoMatrix, 0, deltaY, 0);
 
     return initialTorsoMatrix;
   }
 
+  /**
+   * Creates the initial transformation matrix for the head of the robot. This matrix
+   * moves the head from the initial position of the torso to its initial position
+   * in the world.
+   * @returns {THREE.Matrix4}
+   */
   initialHeadMatrix(){
+    const deltaY = this.torsoHeight/2 + this.headRadius/2;
+
     let initialHeadMatrix = idMat4();
-    initialHeadMatrix = translateMat(initialHeadMatrix, 0, this.torsoHeight/2 + this.headRadius/2, 0);
+    initialHeadMatrix = translateMat(initialHeadMatrix, 0, deltaY, 0);
 
     return initialHeadMatrix;
   }
 
-  initialCuisseMatrix(cote){
+  /**
+   * Creates the initial transformation matrix for a thigh of the robot based on the
+   * chosen 'side'. This matrix moves a thigh from the initial position of the torso
+   * to its initial position in the world depending on the chosen 'side'.
+   * @param side : string The side, 'l' for left or 'r' for right, of the thigh for
+   *                      which the matrix is created. If it's not one of these 2
+   *                      options, then the identity matrix is returned.
+   * @returns {THREE.Matrix4}
+   */
+  initialThighMatrix(side){
+    const deltaY = -this.torsoHeight/2 - this.thighsHeight/2;
+    const deltaX = this.torsoRadius/2;
+
     let initialCuisseMatrix = idMat4();
-    const decalageY = -this.torsoHeight / 2 - this.cuisseHeight / 2;
-    const decalageX = this.torsoRadius / 2;
+    if (side === "l") {
+      initialCuisseMatrix = translateMat(initialCuisseMatrix, -deltaX, deltaY, 0);
 
-    if (cote === "g") {
-      initialCuisseMatrix = translateMat(initialCuisseMatrix, -decalageX, decalageY, 0);
-
-    } else if (cote === "d") {
-      initialCuisseMatrix = translateMat(initialCuisseMatrix, decalageX, decalageY, 0);
+    } else if (side === "r") {
+      initialCuisseMatrix = translateMat(initialCuisseMatrix, deltaX, deltaY, 0);
     }
 
     return initialCuisseMatrix;
   }
 
+  /**
+   *
+   * @param cote
+   * @returns {THREE.Matrix4}
+   */
   initialJambeMatrix(cote){
     let initialJambeMatrix = idMat4();
-    const decalageY = -this.cuisseHeight / 2 - this.jambeHeight / 2;
+    const decalageY = -this.thighsHeight / 2 - this.legsHeight / 2;
 
     if (cote === "g") {
       initialJambeMatrix = translateMat(initialJambeMatrix, 0, decalageY, 0);
@@ -329,10 +362,15 @@ class Robot {
     return initialJambeMatrix;
   }
 
+  /**
+   *
+   * @param cote
+   * @returns {THREE.Matrix4}
+   */
   initialBrasMatrix(cote){
     let initialBrasMatrix = idMat4();
     const decalageY = 3 / 4 * this.torsoHeight / 2;
-    const decalageX = this.torsoRadius + this.brasHeight;
+    const decalageX = this.torsoRadius + this.ArmsHeight;
 
     if (cote === "g") {
       initialBrasMatrix = translateMat(initialBrasMatrix, -decalageX, decalageY, 0);
@@ -344,9 +382,14 @@ class Robot {
     return initialBrasMatrix;
   }
 
+  /**
+   *
+   * @param cote
+   * @returns {THREE.Matrix4}
+   */
   initialAvantBrasMatrix(cote){
     let initialAvantBrasMatrix = idMat4();
-    const decalageX = this.brasHeight + this.avantBrasHeight;
+    const decalageX = this.ArmsHeight + this.forearmsHeight;
 
     if (cote === "g") {
       initialAvantBrasMatrix = translateMat(initialAvantBrasMatrix, -decalageX, 0, 0);
@@ -358,6 +401,11 @@ class Robot {
     return initialAvantBrasMatrix;
   }
 
+  /**
+   *
+   * @param cote
+   * @returns {THREE.Matrix4}
+   */
   initialYeuxMatrix(cote) {
     let initYeuxMatrix = idMat4();
     const decalageXZ = this.headRadius / 2;
@@ -372,6 +420,9 @@ class Robot {
     return initYeuxMatrix;
   }
 
+  /**
+   *
+   */
   initialize() {
     // Torso
     var torsoGeometry = new THREE.CubeGeometry(2*this.torsoRadius, this.torsoHeight, this.torsoRadius, 64);
@@ -424,7 +475,7 @@ class Robot {
 
     // Add transformations
     // Yeux tranformations
-    this.yeuxRescaleMat = rescaleMat(idMat4(), this.yeuxRadius, this.yeuxRadius, this.yeuxRadius);
+    this.yeuxRescaleMat = rescaleMat(idMat4(), this.eyesRadius, this.eyesRadius, this.eyesRadius);
 
     this.oeilGInitMat = this.initialYeuxMatrix("g");
     let m = multMat(matrix, this.oeilGInitMat);
@@ -437,8 +488,8 @@ class Robot {
     this.oeilD.setMatrix(m);
 
     // Bras transformations
-    this.brasRescaleMat = rescaleMat(idMat4(), this.brasHeight, this.brasRadius, this.brasRadius);
-    this.brasRescaleMatInv = inverseMat(this.brasRescaleMat);
+    this.brasRescaleMat = rescaleMat(idMat4(), this.ArmsHeight, this.ArmsRadius, this.ArmsRadius);
+    this.brasRescaleMatInv = invertMat(this.brasRescaleMat);
 
     // Bras gauche
     this.brasGMatrix = idMat4();
@@ -457,7 +508,7 @@ class Robot {
     this.brasD.setMatrix(md);
 
     // Avant-Bras transformations
-    this.avantBrasRescaleMat = rescaleMat(idMat4(), this.avantBrasHeight, this.avantBrasRadius, this.avantBrasRadius);
+    this.avantBrasRescaleMat = rescaleMat(idMat4(), this.forearmsHeight, this.forearmsRadius, this.forearmsRadius);
 
     // Avant-bras gauche
     this.avantBrasGMatrix = idMat4();
@@ -478,11 +529,11 @@ class Robot {
     this.avantBrasD.setMatrix(md);
 
     // Cuisses transformations
-    this.cuisseRescaleMat = rescaleMat(idMat4(), this.cuisseRadius, this.cuisseHeight/2, this.cuisseRadius);
-    this.cuisseRescaleMatInv = inverseMat(this.cuisseRescaleMat);
+    this.cuisseRescaleMat = rescaleMat(idMat4(), this.thighsRadius, this.thighsHeight/2, this.thighsRadius);
+    this.cuisseRescaleMatInv = invertMat(this.cuisseRescaleMat);
 
     // Cuisse Gauche
-    this.cuisseGInitMat = this.initialCuisseMatrix("g");
+    this.cuisseGInitMat = this.initialThighMatrix("l");
     this.cuisseGMatrix = idMat4();
     this.cuisseGRotatMat = idMat4();
     let matrixG = multMat(this.torsoInitialMatrix, this.cuisseGInitMat);
@@ -490,7 +541,7 @@ class Robot {
     this.cuisseG.setMatrix(matrixG);
     
     // Cuisse Droite
-    this.cuisseDInitMat = this.initialCuisseMatrix("d");
+    this.cuisseDInitMat = this.initialThighMatrix("r");
     this.cuisseDMatrix = idMat4();
     this.cuisseDRotatMat = idMat4();
     let matrixD = multMat(this.torsoInitialMatrix, this.cuisseDInitMat);
@@ -498,7 +549,7 @@ class Robot {
     this.cuisseD.setMatrix(matrixD);
 
     // Jambes transformations
-    this.jambeRescaleMat = rescaleMat(idMat4(), this.jambeRadius, this.jambeHeight/2, this.jambeRadius);
+    this.jambeRescaleMat = rescaleMat(idMat4(), this.legsRadius, this.legsHeight/2, this.legsRadius);
 
     // Jambe Gauche
     this.jambeGInitMat = this.initialJambeMatrix("g");
@@ -521,7 +572,8 @@ class Robot {
     // Add robot to scene
     scene.add(this.torso);
     scene.add(this.head);
-    // Add parts
+    scene.add(this.oeilG);
+    scene.add(this.oeilD);
     scene.add(this.brasG);
     scene.add(this.brasD);
     scene.add(this.avantBrasD);
@@ -530,10 +582,14 @@ class Robot {
     scene.add(this.cuisseD);
     scene.add(this.jambeG);
     scene.add(this.jambeD);
-    scene.add(this.oeilG);
-    scene.add(this.oeilD);
   }
 
+  // Methods for moving/rotating the robot parts
+
+  /**
+   *
+   * @param angle
+   */
   rotateTorso(angle){
     let torsoMatrix = this.torsoMatrix;
 
@@ -574,6 +630,10 @@ class Robot {
     }
   }
 
+  /**
+   *
+   * @param speed
+   */
   moveTorso(speed){
     this.torsoMatrix = translateMat(this.torsoMatrix, speed * this.walkDirection.x, speed * this.walkDirection.y, speed * this.walkDirection.z);
 
@@ -595,21 +655,21 @@ class Robot {
     // Si le robot n'était pas en animation de marche, la position des cuisses et jambes est remise à zéro pour que
     // le robot puisse marcher correctement, c'est-à-dire sans avoir des cuisses et/ou jambes dans des positions
     // anormales pour marcher.
-    if (!this.enAnimationMarche) {
-      this.enAnimationMarche = true;
-      this.premierPas = true;
-      this.cuisseGAngle = 0;
-      this.cuisseGMonte = false;
-      this.cuisseDAngle = 0;
-      this.cuisseDMonte = true;
-      this.jambeGAngle = 0;
-      this.jambeGMonte = false;
-      this.jambeDAngle = 0;
-      this.jambeDMonte = false;
+    if (!this.inWalkAnimation) {
+      this.inWalkAnimation = true;
+      this.firstStepAnim = true;
+      this.thighLAngle = 0;
+      this.thighLGoUp = false;
+      this.thighRAngle = 0;
+      this.thighRGoUp = true;
+      this.legLAngle = 0;
+      this.legLGoUp = false;
+      this.legRAngle = 0;
+      this.legRGoUp = false;
     }
 
     // Animation cyclique correspondant à une marche
-    if (this.premierPas) { // Le premier pas du robot est différent du restant de l'animation de marche
+    if (this.firstStepAnim) { // Le premier pas du robot est différent du restant de l'animation de marche
       this.firstStep(speed);
 
     } else {
@@ -623,6 +683,11 @@ class Robot {
     this.standOnFloor();
   }
 
+  /**
+   *
+   * @param angle
+   * @param axis
+   */
   rotateHead(angle, axis){
     // // Mise à jours de l'angle radian actuel de la tête selon l'axe
     if (axis === "x") {
@@ -650,7 +715,7 @@ class Robot {
 
     let m = multMat(idMat4(), this.headInitialMatrix);
     m = translateMat(m, 0, -this.headRadius/2, 0);
-    let im = inverseMat(m);
+    let im = invertMat(m);
 
     // Mise à jour de la matrice de rotation de la tête
     this.headMatrix = idMat4();
@@ -664,21 +729,25 @@ class Robot {
     this.updateHead(matrix);
   }
 
-  // Add methods for other parts
+  /**
+   *
+   * @param angle
+   * @param axis
+   */
   rotateBrasGauche(angle, axis){
     if(axis === "y"){
-      this.brasGAngleX += angle;
+      this.ArmLAngleY += angle;
     }
     else if (axis === "z"){
-      this.brasGAngleZ += angle;
+      this.ArmLAngleZ += angle;
     }
 
     // Mise à jour de la matrice de rotation du bras gauche
     this.brasGRotateMat = idMat4();
-    this.brasGRotateMat = translateMat(this.brasGRotateMat, -this.brasHeight, 0, 0);
-    this.brasGRotateMat = rotateMat(this.brasGRotateMat, this.brasGAngleX, "y");
-    this.brasGRotateMat = rotateMat(this.brasGRotateMat, this.brasGAngleZ, "z");
-    this.brasGRotateMat = translateMat(this.brasGRotateMat, this.brasHeight, 0, 0);
+    this.brasGRotateMat = translateMat(this.brasGRotateMat, -this.ArmsHeight, 0, 0);
+    this.brasGRotateMat = rotateMat(this.brasGRotateMat, this.ArmLAngleY, "y");
+    this.brasGRotateMat = rotateMat(this.brasGRotateMat, this.ArmLAngleZ, "z");
+    this.brasGRotateMat = translateMat(this.brasGRotateMat, this.ArmsHeight, 0, 0);
 
     // update du bras gauche et de l'avant-bras gauche
     let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
@@ -686,20 +755,25 @@ class Robot {
     this.updateAvantBrasG(matrix);
   }
 
+  /**
+   *
+   * @param angle
+   * @param axis
+   */
   rotateBrasDroit(angle, axis){
     if(axis === "y"){
-      this.brasDAngleX += angle;
+      this.ArmRAngleY += angle;
     }
     else if (axis === "z"){
-      this.brasDAngleZ += angle;
+      this.ArmRAngleZ += angle;
     }
 
     // Mise à jour de la matrice de rotation du bras droit
     this.brasDRotateMat = idMat4();
-    this.brasDRotateMat = translateMat(this.brasDRotateMat, this.brasHeight, 0, 0);
-    this.brasDRotateMat = rotateMat(this.brasDRotateMat, this.brasDAngleX, "y");
-    this.brasDRotateMat = rotateMat(this.brasDRotateMat, this.brasDAngleZ, "z");
-    this.brasDRotateMat = translateMat(this.brasDRotateMat, -this.brasHeight, 0, 0);
+    this.brasDRotateMat = translateMat(this.brasDRotateMat, this.ArmsHeight, 0, 0);
+    this.brasDRotateMat = rotateMat(this.brasDRotateMat, this.ArmRAngleY, "y");
+    this.brasDRotateMat = rotateMat(this.brasDRotateMat, this.ArmRAngleZ, "z");
+    this.brasDRotateMat = translateMat(this.brasDRotateMat, -this.ArmsHeight, 0, 0);
 
     // update du bras droit et de l'avant-bras droit
     let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
@@ -707,14 +781,18 @@ class Robot {
     this.updateAvantBrasD(matrix);
   }
 
+  /**
+   *
+   * @param angle
+   */
   rotateAvantBrasGauche(angle){
-    this.avantBrasGAngle += angle;
+    this.forearmLAngle += angle;
 
     // Mise à jour de la matrice de rotation de l'avant-bras gauche
     this.avantBrasGRotateMat = idMat4();
-    this.avantBrasGRotateMat = translateMat(this.avantBrasGRotateMat, -this.avantBrasHeight, 0, 0);
-    this.avantBrasGRotateMat = rotateMat(this.avantBrasGRotateMat, this.avantBrasGAngle,"z");
-    this.avantBrasGRotateMat = translateMat(this.avantBrasGRotateMat, this.avantBrasHeight, 0, 0);
+    this.avantBrasGRotateMat = translateMat(this.avantBrasGRotateMat, -this.forearmsHeight, 0, 0);
+    this.avantBrasGRotateMat = rotateMat(this.avantBrasGRotateMat, this.forearmLAngle,"z");
+    this.avantBrasGRotateMat = translateMat(this.avantBrasGRotateMat, this.forearmsHeight, 0, 0);
 
     // update de l'avant-bras gauche
     let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
@@ -728,14 +806,18 @@ class Robot {
     this.avantBrasG.setMatrix(matrix);
   }
 
+  /**
+   *
+   * @param angle
+   */
   rotateAvantBrasDroit(angle){
-    this.avantBrasDAngle += angle;
+    this.forearmRAngle += angle;
 
     // Mise à jour de la matrice de rotation de l'avant-bras droit
     this.avantBrasDRotateMat = idMat4();
-    this.avantBrasDRotateMat = translateMat(this.avantBrasDRotateMat, this.avantBrasHeight, 0, 0);
-    this.avantBrasDRotateMat = rotateMat(this.avantBrasDRotateMat, this.avantBrasDAngle,"z");
-    this.avantBrasDRotateMat = translateMat(this.avantBrasDRotateMat, -this.avantBrasHeight, 0, 0);
+    this.avantBrasDRotateMat = translateMat(this.avantBrasDRotateMat, this.forearmsHeight, 0, 0);
+    this.avantBrasDRotateMat = rotateMat(this.avantBrasDRotateMat, this.forearmRAngle,"z");
+    this.avantBrasDRotateMat = translateMat(this.avantBrasDRotateMat, -this.forearmsHeight, 0, 0);
 
     // update de l'avant-bras gauche
     let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
@@ -749,22 +831,26 @@ class Robot {
     this.avantBrasD.setMatrix(matrix);
   }
 
+  /**
+   *
+   * @param angle
+   */
   rotateCuisseGauche(angle){
-    this.cuisseGAngle += angle;
-    this.cuisseGAngle = correctAngle(this.cuisseGAngle);
+    this.thighLAngle += angle;
+    this.thighLAngle = correctAngle(this.thighLAngle);
 
     // Angle radian de rotation maximum de la cuisse
-    if (this.cuisseGAngle > this.cuisseAngleMax) {
-      this.cuisseGAngle = this.cuisseAngleMax;
-    } else if (this.cuisseGAngle < -this.cuisseAngleMax) {
-      this.cuisseGAngle = -this.cuisseAngleMax;
+    if (this.thighLAngle > this.thighsAngleMax) {
+      this.thighLAngle = this.thighsAngleMax;
+    } else if (this.thighLAngle < -this.thighsAngleMax) {
+      this.thighLAngle = -this.thighsAngleMax;
     }
 
     // Mise à jour de la matrice de rotation de la cuisse gauche
     this.cuisseGRotatMat = idMat4();
-    this.cuisseGRotatMat = translateMat(this.cuisseGRotatMat, 0, -this.cuisseHeight/2, 0);
-    this.cuisseGRotatMat = rotateMat(this.cuisseGRotatMat, this.cuisseGAngle, "x");
-    this.cuisseGRotatMat = translateMat(this.cuisseGRotatMat, 0, this.cuisseHeight/2, 0);
+    this.cuisseGRotatMat = translateMat(this.cuisseGRotatMat, 0, -this.thighsHeight/2, 0);
+    this.cuisseGRotatMat = rotateMat(this.cuisseGRotatMat, this.thighLAngle, "x");
+    this.cuisseGRotatMat = translateMat(this.cuisseGRotatMat, 0, this.thighsHeight/2, 0);
 
     // Mise à jour de la cuisse gauche et de la jambe gauche
     let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
@@ -772,22 +858,26 @@ class Robot {
     this.updateJambeG(matrix);
   }
 
+  /**
+   *
+   * @param angle
+   */
   rotateCuisseDroite(angle){
-    this.cuisseDAngle += angle;
-    this.cuisseDAngle = correctAngle(this.cuisseDAngle);
+    this.thighRAngle += angle;
+    this.thighRAngle = correctAngle(this.thighRAngle);
 
     // Angle radian de rotation maximum de la cuisse
-    if (this.cuisseDAngle > this.cuisseAngleMax) {
-      this.cuisseDAngle = this.cuisseAngleMax;
-    } else if (this.cuisseDAngle < -this.cuisseAngleMax) {
-      this.cuisseDAngle = -this.cuisseAngleMax;
+    if (this.thighRAngle > this.thighsAngleMax) {
+      this.thighRAngle = this.thighsAngleMax;
+    } else if (this.thighRAngle < -this.thighsAngleMax) {
+      this.thighRAngle = -this.thighsAngleMax;
     }
 
     // Mise à jour de la matrice de rotation de la cuisse droite
     this.cuisseDRotatMat = idMat4();
-    this.cuisseDRotatMat = translateMat(this.cuisseDRotatMat, 0, -this.cuisseHeight/2, 0);
-    this.cuisseDRotatMat = rotateMat(this.cuisseDRotatMat, this.cuisseDAngle, "x");
-    this.cuisseDRotatMat = translateMat(this.cuisseDRotatMat, 0, this.cuisseHeight/2, 0);
+    this.cuisseDRotatMat = translateMat(this.cuisseDRotatMat, 0, -this.thighsHeight/2, 0);
+    this.cuisseDRotatMat = rotateMat(this.cuisseDRotatMat, this.thighRAngle, "x");
+    this.cuisseDRotatMat = translateMat(this.cuisseDRotatMat, 0, this.thighsHeight/2, 0);
 
     // Mise à jour de la cuisse droite et de la jambe droite
     let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
@@ -795,22 +885,26 @@ class Robot {
     this.updateJambeD(matrix);
   }
 
+  /**
+   *
+   * @param angle
+   */
   rotateJambeGauche(angle){
-    this.jambeGAngle += angle;
-    this.jambeGAngle = correctAngle(this.jambeGAngle);
+    this.legLAngle += angle;
+    this.legLAngle = correctAngle(this.legLAngle);
 
     // Angle radian de rotation maximum de la jambe
-    if (this.jambeGAngle > this.jambeAngleMax) {
-      this.jambeGAngle = this.jambeAngleMax;
-    } else if (this.jambeGAngle < -this.jambeAngleMax) {
-      this.jambeGAngle = -this.jambeAngleMax;
+    if (this.legLAngle > this.legsAngleMax) {
+      this.legLAngle = this.legsAngleMax;
+    } else if (this.legLAngle < -this.legsAngleMax) {
+      this.legLAngle = -this.legsAngleMax;
     }
 
     // Mise à jour de la matrice de rotation de la jambe gauche
     this.jambeGRotatMat = idMat4();
-    this.jambeGRotatMat = translateMat(this.jambeGRotatMat, 0, -this.jambeHeight/2, 0);
-    this.jambeGRotatMat = rotateMat(this.jambeGRotatMat, this.jambeGAngle, "x");
-    this.jambeGRotatMat = translateMat(this.jambeGRotatMat, 0, this.jambeHeight/2, 0);
+    this.jambeGRotatMat = translateMat(this.jambeGRotatMat, 0, -this.legsHeight/2, 0);
+    this.jambeGRotatMat = rotateMat(this.jambeGRotatMat, this.legLAngle, "x");
+    this.jambeGRotatMat = translateMat(this.jambeGRotatMat, 0, this.legsHeight/2, 0);
 
     let matrix = multMat(this.jambeGMatrix, this.jambeGInitMat);
     matrix = multMat(matrix, this.jambeGRotatMat);
@@ -823,22 +917,26 @@ class Robot {
     this.jambeG.setMatrix(matrix);
   }
 
+  /**
+   *
+   * @param angle
+   */
   rotateJambeDroite(angle){
-    this.jambeDAngle += angle;
-    this.jambeDAngle = correctAngle(this.jambeDAngle);
+    this.legRAngle += angle;
+    this.legRAngle = correctAngle(this.legRAngle);
 
     // Angle radian de rotation maximum de la jambe
-    if (this.jambeDAngle > this.jambeAngleMax) {
-      this.jambeDAngle = this.jambeAngleMax;
-    } else if (this.jambeDAngle < -this.jambeAngleMax) {
-      this.jambeDAngle = -this.jambeAngleMax;
+    if (this.legRAngle > this.legsAngleMax) {
+      this.legRAngle = this.legsAngleMax;
+    } else if (this.legRAngle < -this.legsAngleMax) {
+      this.legRAngle = -this.legsAngleMax;
     }
 
     // Mise à jour de la matrice de rotation de la jambe droite
     this.jambeDRotatMat = idMat4();
-    this.jambeDRotatMat = translateMat(this.jambeDRotatMat, 0, -this.jambeHeight/2, 0);
-    this.jambeDRotatMat = rotateMat(this.jambeDRotatMat, this.jambeDAngle, "x");
-    this.jambeDRotatMat = translateMat(this.jambeDRotatMat, 0, this.jambeHeight/2, 0);
+    this.jambeDRotatMat = translateMat(this.jambeDRotatMat, 0, -this.legsHeight/2, 0);
+    this.jambeDRotatMat = rotateMat(this.jambeDRotatMat, this.legRAngle, "x");
+    this.jambeDRotatMat = translateMat(this.jambeDRotatMat, 0, this.legsHeight/2, 0);
 
     let matrix = multMat(this.jambeDMatrix, this.jambeDInitMat);
     matrix = multMat(matrix, this.jambeDRotatMat);
@@ -851,8 +949,12 @@ class Robot {
     this.jambeD.setMatrix(matrix);
   }
 
-  // Methods for updating robot parts
+  // Methods for updating the robot parts
 
+  /**
+   *
+   * @param matrix
+   */
   updateHead(matrix) {
     // Sert à faire la mise à jour de la tête et des yeux lorsqu'un membre qui précède la tête dans
     //    la hiérarchie du robot à été modifié.
@@ -875,6 +977,11 @@ class Robot {
     this.oeilD.setMatrix(m);
   }
 
+  /**
+   *
+   * @param matrix
+   * @returns {THREE.Matrix4}
+   */
   updateCuisseG(matrix) {
     // Sert à faire la mise à jour de la cuisse gauche lorsqu'un membre qui la précède dans
     //    la hiérarchie du robot à été modifié.
@@ -893,6 +1000,11 @@ class Robot {
     return matrix2;
   }
 
+  /**
+   *
+   * @param matrix
+   * @returns {THREE.Matrix4}
+   */
   updateCuisseD(matrix) {
     // Sert à faire la mise à jour de la cuisse droite lorsqu'un membre qui la précède dans
     //    la hiérarchie du robot à été modifié.
@@ -911,6 +1023,10 @@ class Robot {
     return matrix2;
   }
 
+  /**
+   *
+   * @param matrix
+   */
   updateJambeG(matrix) {
     // Sert à faire la mise à jour de la jambe gauche lorsqu'un membre qui la précède dans
     //    la hiérarchie du robot à été modifié.
@@ -924,6 +1040,10 @@ class Robot {
     this.jambeG.setMatrix(matrix2);
   }
 
+  /**
+   *
+   * @param matrix
+   */
   updateJambeD(matrix) {
     // Sert à faire la mise à jour de la jambe droite lorsqu'un membre qui la précède dans
     //    la hiérarchie du robot à été modifié.
@@ -937,6 +1057,11 @@ class Robot {
     this.jambeD.setMatrix(matrix2);
   }
 
+  /**
+   *
+   * @param matrix
+   * @returns {THREE.Matrix4}
+   */
   updateBrasG(matrix) {
     // Sert à faire la mise à jour du bras gauche lorsqu'un membre qui précède la précède dans
     //    la hiérarchie du robot à été modifié.
@@ -954,6 +1079,11 @@ class Robot {
     return matrix2;
   }
 
+  /**
+   *
+   * @param matrix
+   * @returns {THREE.Matrix4}
+   */
   updateBrasD(matrix) {
     // Sert à faire la mise à jour du bras droit lorsqu'un membre qui précède la précède dans
     //    la hiérarchie du robot à été modifié.
@@ -971,6 +1101,10 @@ class Robot {
     return matrix2;
   }
 
+  /**
+   *
+   * @param matrix
+   */
   updateAvantBrasG(matrix) {
     // Sert à faire la mise à jour de l'avant-bras gauche lorsqu'un membre qui la précède dans
     //    la hiérarchie du robot à été modifié.
@@ -984,6 +1118,10 @@ class Robot {
     this.avantBrasG.setMatrix(matrix2);
   }
 
+  /**
+   *
+   * @param matrix
+   */
   updateAvantBrasD(matrix) {
     // Sert à faire la mise à jour de l'avant-bras droit lorsqu'un membre qui la précède dans
     //    la hiérarchie du robot à été modifié.
@@ -997,280 +1135,303 @@ class Robot {
     this.avantBrasD.setMatrix(matrix2);
   }
 
-  // Methods for walking animation
+  // Methods for the walking animation of the robot
 
+  /**
+   *
+   * @param speed
+   */
   firstStep(speed) {
-    if (this.cuisseDAngle <= -0.5) { // Dernière rotation du premier pas
-      this.cuisseDAngle = -0.5;
-      this.premierPas = false;
+    if (this.thighRAngle <= -0.5) { // Dernière rotation du premier pas
+      this.thighRAngle = -0.5;
+      this.firstStepAnim = false;
     }
     
     robot.rotateCuisseDroite(-speed);
     robot.rotateCuisseGauche(0.5 * speed);
 
-    if (!this.jambeDMonte) {
+    if (!this.legRGoUp) {
       robot.rotateJambeDroite(speed);
 
-      if (this.jambeDAngle >= 0.4) {
-        this.jambeDAngle = 0.4;
-        this.jambeDMonte = true;
+      if (this.legRAngle >= 0.4) {
+        this.legRAngle = 0.4;
+        this.legRGoUp = true;
       }
 
     } else { // jambe droite descend
       robot.rotateJambeDroite(-speed);
     }
 
-    if (this.cuisseGAngle >= 0.1) {
+    if (this.thighLAngle >= 0.1) {
       robot.rotateJambeGauche(speed);
     }
     // else : aucune rotation de la jambe gauche
   }
 
+  /**
+   *
+   * @param speed
+   */
   marcheCuisseGauche(speed) {
     const avance = speed > 0;
 
-    if (avance && this.cuisseGMonte && this.cuisseGAngle > -0.6) {
+    if (avance && this.thighLGoUp && this.thighLAngle > -0.6) {
       robot.rotateCuisseGauche(-speed);
 
-    } else if (avance && this.cuisseGMonte) { // cuisseGAngle <= -0.6
-      this.cuisseGMonte = false;
-      this.cuisseGAngle = -0.6;
+    } else if (avance && this.thighLGoUp) { // thighLAngle <= -0.6
+      this.thighLGoUp = false;
+      this.thighLAngle = -0.6;
       robot.rotateCuisseGauche(speed);
 
-    } else if (avance && this.cuisseGAngle < 0.3) { // Descend
+    } else if (avance && this.thighLAngle < 0.3) { // Descend
       robot.rotateCuisseGauche(speed);
 
-    } else if (avance) { // Descend , cuisseGAngle >= 0.3
-      this.cuisseGMonte = true;
-      this.cuisseGAngle = 0.3;
+    } else if (avance) { // Descend , thighLAngle >= 0.3
+      this.thighLGoUp = true;
+      this.thighLAngle = 0.3;
       robot.rotateCuisseGauche(-speed);
 
-    } else if (this.cuisseGMonte && this.cuisseGAngle > -0.6) { // Recule
+    } else if (this.thighLGoUp && this.thighLAngle > -0.6) { // Recule
       robot.rotateCuisseGauche(speed);
 
-    } else if (this.cuisseGMonte) { // Recule , cuisseGAngle <= -0.6
-      this.cuisseGMonte = false;
-      this.cuisseGAngle = -0.6;
+    } else if (this.thighLGoUp) { // Recule , thighLAngle <= -0.6
+      this.thighLGoUp = false;
+      this.thighLAngle = -0.6;
       robot.rotateCuisseGauche(-speed);
 
-    } else if (this.cuisseGAngle < 0.3) { // Recule , Descend
+    } else if (this.thighLAngle < 0.3) { // Recule , Descend
       robot.rotateCuisseGauche(-speed);
 
-    } else { // Recule , Descend , CuisseGAngle >= 0.3
-      this.cuisseGMonte = true;
-      this.cuisseGAngle = 0.3;
+    } else { // Recule , Descend , thighLAngle >= 0.3
+      this.thighLGoUp = true;
+      this.thighLAngle = 0.3;
       robot.rotateCuisseGauche(speed);
     }
   }
 
+  /**
+   *
+   * @param speed
+   */
   marcheCuisseDroite(speed) {
     const avance = speed > 0;
 
-    if (avance && this.cuisseDMonte && this.cuisseDAngle > -0.6) {
+    if (avance && this.thighRGoUp && this.thighRAngle > -0.6) {
       robot.rotateCuisseDroite(-speed);
 
-    } else if (avance && this.cuisseDMonte) { // cuisseDAngle <= -0.6
-      this.cuisseDMonte = false;
-      this.cuisseDAngle = -0.6;
+    } else if (avance && this.thighRGoUp) { // thighRAngle <= -0.6
+      this.thighRGoUp = false;
+      this.thighRAngle = -0.6;
       robot.rotateCuisseDroite(speed);
 
-    } else if (avance && this.cuisseDAngle < 0.3) { // Cuisse descend
+    } else if (avance && this.thighRAngle < 0.3) { // Cuisse descend
       robot.rotateCuisseDroite(speed);
 
-    } else if (avance) { // Descend , cuisseDAngle >= 0.3
-      this.cuisseDMonte = true;
-      this.cuisseDAngle = 0.3;
+    } else if (avance) { // Descend , thighRAngle >= 0.3
+      this.thighRGoUp = true;
+      this.thighRAngle = 0.3;
       robot.rotateCuisseDroite(-speed);
 
-    } else if (this.cuisseDMonte && this.cuisseDAngle > -0.6) { // Recule
+    } else if (this.thighRGoUp && this.thighRAngle > -0.6) { // Recule
       robot.rotateCuisseDroite(speed);
 
-    } else if (this.cuisseDMonte) { // Recule , cuisseDAngle <= -0.6
-      this.cuisseDMonte = false;
-      this.cuisseDAngle = -0.6;
+    } else if (this.thighRGoUp) { // Recule , thighRAngle <= -0.6
+      this.thighRGoUp = false;
+      this.thighRAngle = -0.6;
 
       robot.rotateCuisseDroite(-speed);
 
-    } else if (this.cuisseDAngle < 0.3) { // Recule , Descend
+    } else if (this.thighRAngle < 0.3) { // Recule , Descend
       robot.rotateCuisseDroite(-speed);
 
-    } else { // Recule , Descend , CuisseDAngle >= 0.3
-      this.cuisseDMonte = true;
-      this.cuisseDAngle = 0.3;
+    } else { // Recule , Descend , thighRAngle >= 0.3
+      this.thighRGoUp = true;
+      this.thighRAngle = 0.3;
       robot.rotateCuisseDroite(speed);
     }
   }
 
+  /**
+   *
+   * @param speed
+   */
   marcheJambeGauche(speed){
     const avance = speed > 0;
 
-    if (avance && this.jambeGMonte && this.jambeGAngle > 0.2) {
+    if (avance && this.legLGoUp && this.legLAngle > 0.2) {
       robot.rotateJambeGauche(-speed);
 
-    } else if (avance && this.jambeGMonte && this.jambeGAngle === 0.2) {
+    } else if (avance && this.legLGoUp && this.legLAngle === 0.2) {
 
-      if (this.cuisseGAngle === -0.4) {
+      if (this.thighLAngle === -0.4) {
         robot.rotateJambeGauche(speed);
 
       } else {
         robot.rotateJambeGauche(0);
       }
 
-    } else if (avance && this.jambeGMonte && this.jambeGAngle > 0) {
+    } else if (avance && this.legLGoUp && this.legLAngle > 0) {
       robot.rotateJambeGauche(-speed);
 
-    } else if (avance && this.jambeGMonte) { // jambeGAngle <= 0
-      this.jambeGMonte = false;
-      this.jambeGAngle = 0;
+    } else if (avance && this.legLGoUp) { // legLAngle <= 0
+      this.legLGoUp = false;
+      this.legLAngle = 0;
       robot.rotateJambeGauche(0);
 
-    } else if (avance && this.jambeGAngle === 0) { // Descend
+    } else if (avance && this.legLAngle === 0) { // Descend
       
-      if (this.cuisseGAngle === 0) {
+      if (this.thighLAngle === 0) {
         robot.rotateJambeGauche(0.5 * speed);
 
       } else {
         robot.rotateJambeGauche(0);
       }
 
-    } else if (avance && this.jambeGAngle < 0.5) { // Descend
+    } else if (avance && this.legLAngle < 0.5) { // Descend
       robot.rotateJambeGauche(1.5 * speed);
 
-    } else if (avance && this.jambeGAngle < 0.8) { // Descend
+    } else if (avance && this.legLAngle < 0.8) { // Descend
       robot.rotateJambeGauche(speed);
 
-    } else if (avance) { // Descend, jambeGAngle >= 0.8
-      this.jambeGMonte = true;
-      this.jambeGAngle = 0.8;
+    } else if (avance) { // Descend, legLAngle >= 0.8
+      this.legLGoUp = true;
+      this.legLAngle = 0.8;
       robot.rotateJambeGauche(-speed);
 
-    } else if (this.jambeGMonte && this.jambeGAngle > 0.2) { // Recule
+    } else if (this.legLGoUp && this.legLAngle > 0.2) { // Recule
       robot.rotateJambeGauche(speed);
 
-    } else if (this.jambeGMonte && this.jambeGAngle === 0.2) { // Recule
+    } else if (this.legLGoUp && this.legLAngle === 0.2) { // Recule
 
-      if (this.cuisseGAngle === -0.4) {
+      if (this.thighLAngle === -0.4) {
         robot.rotateJambeGauche(-speed);
 
       } else {
         robot.rotateJambeGauche(0);
       }
 
-    } else if (this.jambeGMonte && this.jambeGAngle > 0) { // Recule
+    } else if (this.legLGoUp && this.legLAngle > 0) { // Recule
       robot.rotateJambeGauche(speed);
 
-    } else if (this.jambeGMonte) { // Recule, jambeGAngle <= 0
-      this.jambeGMonte = false;
-      this.jambeGAngle = 0;
+    } else if (this.legLGoUp) { // Recule, legLAngle <= 0
+      this.legLGoUp = false;
+      this.legLAngle = 0;
       robot.rotateJambeGauche(0);
 
-    } else if (this.jambeGAngle === 0) { // Recule, descend
+    } else if (this.legLAngle === 0) { // Recule, descend
 
-      if (this.cuisseGAngle === 0) {
+      if (this.thighLAngle === 0) {
         robot.rotateJambeGauche(0.5 * -speed);
 
       } else {
         robot.rotateJambeGauche(0);
       }
 
-    } else if (this.jambeGAngle < 0.5) { // Recule, descend
+    } else if (this.legLAngle < 0.5) { // Recule, descend
       robot.rotateJambeGauche(1.5 * -speed);
 
-    } else if (this.jambeGAngle < 0.8) { // Recule, descend
+    } else if (this.legLAngle < 0.8) { // Recule, descend
       robot.rotateJambeGauche(-speed);
 
-    } else { // Recule, descend, jambeGAngle >= 0.8
-      this.jambeGMonte = true;
-      this.jambeGAngle = 0.8;
+    } else { // Recule, descend, legLAngle >= 0.8
+      this.legLGoUp = true;
+      this.legLAngle = 0.8;
       robot.rotateJambeGauche(speed);
     }
   }
 
+  /**
+   *
+   * @param speed
+   */
   marcheJambeDroite(speed){
     const avance = speed > 0;
 
-    if (avance && this.jambeDMonte && this.jambeDAngle > 0.2) {
+    if (avance && this.legRGoUp && this.legRAngle > 0.2) {
       robot.rotateJambeDroite(-speed);
 
-    } else if (avance && this.jambeDMonte && this.jambeDAngle === 0.2) {
+    } else if (avance && this.legRGoUp && this.legRAngle === 0.2) {
 
-      if (this.cuisseDAngle === -0.4) {
+      if (this.thighRAngle === -0.4) {
         robot.rotateJambeDroite(speed);
 
       } else {
         robot.rotateJambeDroite(0);
       }
 
-    } else if (avance && this.jambeDMonte && this.jambeDAngle > 0) {
+    } else if (avance && this.legRGoUp && this.legRAngle > 0) {
       robot.rotateJambeDroite(-speed);
 
-    } else if (avance && this.jambeDMonte) { // jambeDAngle <= 0
-      this.jambeDMonte = false;
-      this.jambeDAngle = 0;
+    } else if (avance && this.legRGoUp) { // legRAngle <= 0
+      this.legRGoUp = false;
+      this.legRAngle = 0;
       robot.rotateJambeDroite(0);
 
-    } else if (avance && this.jambeDAngle === 0) { // Descend
+    } else if (avance && this.legRAngle === 0) { // Descend
       
-      if (this.cuisseDAngle === 0) {
+      if (this.thighRAngle === 0) {
         robot.rotateJambeDroite(0.5 * speed);
 
       } else {
         robot.rotateJambeDroite(0);
       }
 
-    } else if (avance && this.jambeDAngle < 0.5) { // Descend
+    } else if (avance && this.legRAngle < 0.5) { // Descend
       robot.rotateJambeDroite(1.5 * speed);
 
-    } else if (avance && this.jambeDAngle < 0.8) { // Descend
+    } else if (avance && this.legRAngle < 0.8) { // Descend
       robot.rotateJambeDroite(speed);
 
-    } else if (avance) { // Descend, jambeDAngle >= 0.8
-      this.jambeDMonte = true;
-      this.jambeDAngle = 0.8;
+    } else if (avance) { // Descend, legRAngle >= 0.8
+      this.legRGoUp = true;
+      this.legRAngle = 0.8;
       robot.rotateJambeDroite(-speed);
 
-    } else if (this.jambeDMonte && this.jambeDAngle > 0.2) { // Recule
+    } else if (this.legRGoUp && this.legRAngle > 0.2) { // Recule
       robot.rotateJambeDroite(speed);
 
-    } else if (this.jambeDMonte && this.jambeDAngle === 0.2) { // Recule
+    } else if (this.legRGoUp && this.legRAngle === 0.2) { // Recule
 
-      if (this.cuisseDAngle === -0.4) {
+      if (this.thighRAngle === -0.4) {
         robot.rotateJambeDroite(-speed);
 
       } else {
         robot.rotateJambeDroite(0);
       }
 
-    } else if (this.jambeDMonte && this.jambeDAngle > 0) { // Recule
+    } else if (this.legRGoUp && this.legRAngle > 0) { // Recule
       robot.rotateJambeDroite(speed);
 
-    } else if (this.jambeDMonte) { // Recule, jambeDAngle <= 0
-      this.jambeDMonte = false;
-      this.jambeDAngle = 0;
+    } else if (this.legRGoUp) { // Recule, legRAngle <= 0
+      this.legRGoUp = false;
+      this.legRAngle = 0;
       robot.rotateJambeDroite(0);
 
-    } else if (this.jambeDAngle === 0) { // Recule, descend
+    } else if (this.legRAngle === 0) { // Recule, descend
 
-      if (this.cuisseDAngle === 0) {
+      if (this.thighRAngle === 0) {
         robot.rotateJambeDroite(0.5 * -speed);
 
       } else {
         robot.rotateJambeDroite(0);
       }
 
-    } else if (this.jambeDAngle < 0.5) { // Recule, descend
+    } else if (this.legRAngle < 0.5) { // Recule, descend
       robot.rotateJambeDroite(1.5 * -speed);
 
-    } else if (this.jambeDAngle < 0.8) { // Recule, descend
+    } else if (this.legRAngle < 0.8) { // Recule, descend
       robot.rotateJambeDroite(-speed);
 
-    } else { // Recule, descend, jambeDAngle >= 0.8
-      this.jambeDMonte = true;
-      this.jambeDAngle = 0.8;
+    } else { // Recule, descend, legRAngle >= 0.8
+      this.legRGoUp = true;
+      this.legRAngle = 0.8;
       robot.rotateJambeDroite(speed);
     }
   }
 
+  /**
+   *
+   */
   standOnFloor() {
     // End Effector des jambes à leur création
     let endEffectorG = new THREE.Vector3(0, -1, 0);
@@ -1341,8 +1502,12 @@ class Robot {
     this.updateAvantBrasD(mD);
   }
 
-  // Methods to look at mouse on floor
+  // Methods for looking at the mouse on the floor
 
+  /**
+   *
+   * @param point
+   */
   look_at(point){
     // Compute and apply the correct rotation of the head and the torso for the robot to look at @point
 
@@ -1531,19 +1696,19 @@ function checkKeyboard() {
         robot.rotateAvantBrasDroit(-0.1);
         break;
       case "Left Thigh":
-        robot.enAnimationMarche = false;
+        robot.inWalkAnimation = false;
         robot.rotateCuisseGauche(-0.1);
         break;
       case "Left Leg":
-        robot.enAnimationMarche = false;
+        robot.inWalkAnimation = false;
         robot.rotateJambeGauche(-0.1);
         break;
       case "Right Thigh":
-        robot.enAnimationMarche = false;
+        robot.inWalkAnimation = false;
         robot.rotateCuisseDroite(-0.1);
         break;
       case "Right Leg":
-        robot.enAnimationMarche = false;
+        robot.inWalkAnimation = false;
         robot.rotateJambeDroite(-0.1);
         break;
     }
@@ -1572,19 +1737,19 @@ function checkKeyboard() {
         robot.rotateAvantBrasDroit(0.1);
         break;
       case "Left Thigh":
-        robot.enAnimationMarche = false;
+        robot.inWalkAnimation = false;
         robot.rotateCuisseGauche(0.1);
         break;
       case "Left Leg":
-        robot.enAnimationMarche = false;
+        robot.inWalkAnimation = false;
         robot.rotateJambeGauche(0.1);
         break;
       case "Right Thigh":
-        robot.enAnimationMarche = false;
+        robot.inWalkAnimation = false;
         robot.rotateCuisseDroite(0.1);
         break;
       case "Right Leg":
-        robot.enAnimationMarche = false;
+        robot.inWalkAnimation = false;
         robot.rotateJambeDroite(0.1);
         break;
     }
