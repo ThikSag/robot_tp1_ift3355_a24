@@ -1,6 +1,9 @@
 # robot_tp1_ift3355_a24
 ## Robot - Travail pratique 1 - IFT3355 Infographie - Automne 2024
 
+⚠️ Je travaille présentement sur le fichier "A1.js" pour traduire tout ce qui est en français en anglais. La version anglaise du fichier "A1.js" se trouve dans la branche "english_comments" de ce répertoire.⚠️
+⚠️ I'm currently working on translating the 'A1.js' file from French to English. The English version of the 'A1.js' file can be found in the 'english_comments' branch of this repository.⚠️
+
 Voici une brève explication du projet en attendant que je puisses en faire une plus complète.
 
 Dans ce projet, il fallait compléter un robot, le faire marcher et le faire regarder un point indiqué par la souris. Il fallait aussi compléter les fonctions de transformation qui permettent au robot de bouger.
