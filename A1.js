@@ -292,37 +292,36 @@ class Robot {
 
   /**
    * Creates the initial transformation matrix for the torso of the robot. This matrix
-   * moves the torso from the origin of the world to its initial position in the world.
+   * moves the torso to its initial position from the origin of the world.
    * @returns {THREE.Matrix4}
    */
   initialTorsoMatrix(){
     const deltaY = this.torsoHeight/2 + this.thighsHeight + this.legsHeight;
 
-    let initialTorsoMatrix = idMat4();
-    initialTorsoMatrix = translateMat(initialTorsoMatrix, 0, deltaY, 0);
+    let initTorsoMatrix = idMat4();
+    initTorsoMatrix = translateMat(initTorsoMatrix, 0, deltaY, 0);
 
-    return initialTorsoMatrix;
+    return initTorsoMatrix;
   }
 
   /**
    * Creates the initial transformation matrix for the head of the robot. This matrix
-   * moves the head from the initial position of the torso to its initial position
-   * in the world.
+   * moves the head to its initial position from the initial position of the torso.
    * @returns {THREE.Matrix4}
    */
   initialHeadMatrix(){
     const deltaY = this.torsoHeight/2 + this.headRadius/2;
 
-    let initialHeadMatrix = idMat4();
-    initialHeadMatrix = translateMat(initialHeadMatrix, 0, deltaY, 0);
+    let initHeadMatrix = idMat4();
+    initHeadMatrix = translateMat(initHeadMatrix, 0, deltaY, 0);
 
-    return initialHeadMatrix;
+    return initHeadMatrix;
   }
 
   /**
    * Creates the initial transformation matrix for a thigh of the robot based on the
-   * chosen 'side'. This matrix moves a thigh from the initial position of the torso
-   * to its initial position in the world depending on the chosen 'side'.
+   * chosen 'side'. This matrix moves a thigh to its initial position (based on the
+   * 'side') from the initial position of the torso.
    * @param side : string The side, 'l' for left or 'r' for right, of the thigh for
    *                      which the matrix is created. If it's not one of these 2
    *                      options, then the identity matrix is returned.
@@ -332,98 +331,106 @@ class Robot {
     const deltaY = -this.torsoHeight/2 - this.thighsHeight/2;
     const deltaX = this.torsoRadius/2;
 
-    let initialCuisseMatrix = idMat4();
+    let initThighMatrix = idMat4();
     if (side === "l") {
-      initialCuisseMatrix = translateMat(initialCuisseMatrix, -deltaX, deltaY, 0);
+      initThighMatrix = translateMat(initThighMatrix, -deltaX, deltaY, 0);
 
     } else if (side === "r") {
-      initialCuisseMatrix = translateMat(initialCuisseMatrix, deltaX, deltaY, 0);
+      initThighMatrix = translateMat(initThighMatrix, deltaX, deltaY, 0);
     }
 
-    return initialCuisseMatrix;
+    return initThighMatrix;
   }
 
   /**
-   *
-   * @param cote
+   * Creates the initial transformation matrix for a leg of the robot. This matrix
+   * moves a leg to its initial position from the initial position of a thigh.
    * @returns {THREE.Matrix4}
    */
-  initialJambeMatrix(cote){
-    let initialJambeMatrix = idMat4();
-    const decalageY = -this.thighsHeight / 2 - this.legsHeight / 2;
+  initialLegMatrix(){
+    const deltaY = -this.thighsHeight/2 - this.legsHeight/2;
 
-    if (cote === "g") {
-      initialJambeMatrix = translateMat(initialJambeMatrix, 0, decalageY, 0);
+    let initLegMatrix = idMat4();
+    initLegMatrix = translateMat(initLegMatrix, 0, deltaY, 0);
 
-    } else if (cote === "d") {
-      initialJambeMatrix = translateMat(initialJambeMatrix, 0, decalageY, 0);
-    }
-
-    return initialJambeMatrix;
+    return initLegMatrix;
   }
 
   /**
-   *
-   * @param cote
+   * Creates the initial transformation matrix for an arm of the robot based on the
+   * chosen 'side'. This matrix moves an arm to its initial position (based on the
+   * 'side') from the initial position of the torso.
+   * @param side : string The side, 'l' for left or 'r' for right, of the arm for
+   *                      which the matrix is created. If it's not one of these 2
+   *                      options, then the identity matrix is returned.
    * @returns {THREE.Matrix4}
    */
-  initialBrasMatrix(cote){
-    let initialBrasMatrix = idMat4();
-    const decalageY = 3 / 4 * this.torsoHeight / 2;
-    const decalageX = this.torsoRadius + this.ArmsHeight;
+  initialArmMatrix(side){
+    const deltaY = 3/4 * this.torsoHeight/2;
+    const deltaX = this.torsoRadius + this.ArmsHeight;
 
-    if (cote === "g") {
-      initialBrasMatrix = translateMat(initialBrasMatrix, -decalageX, decalageY, 0);
+    let initArmMatrix = idMat4();
+    if (side === "l") {
+      initArmMatrix = translateMat(initArmMatrix, -deltaX, deltaY, 0);
 
-    } else if (cote === "d") {
-      initialBrasMatrix = translateMat(initialBrasMatrix, decalageX, decalageY, 0);
+    } else if (side === "r") {
+      initArmMatrix = translateMat(initArmMatrix, deltaX, deltaY, 0);
     }
 
-    return initialBrasMatrix;
+    return initArmMatrix;
   }
 
   /**
-   *
-   * @param cote
+   * Creates the initial transformation matrix for a forearm of the robot based on
+   * the chosen 'side'. This matrix moves a forearm to its initial position (based
+   * on the 'side') from the initial position of the arm of the same 'side'.
+   * @param side : string The side, 'l' for left or 'r' for right, of the forearm
+   *                      for which the matrix is created. If it's not one of these
+   *                      2 options, then the identity matrix is returned.
    * @returns {THREE.Matrix4}
    */
-  initialAvantBrasMatrix(cote){
-    let initialAvantBrasMatrix = idMat4();
-    const decalageX = this.ArmsHeight + this.forearmsHeight;
+  initialForearmMatrix(side){
+    const deltaX = this.ArmsHeight + this.forearmsHeight;
 
-    if (cote === "g") {
-      initialAvantBrasMatrix = translateMat(initialAvantBrasMatrix, -decalageX, 0, 0);
+    let initForearmMatrix = idMat4();
+    if (side === "l") {
+      initForearmMatrix = translateMat(initForearmMatrix, -deltaX, 0, 0);
 
-    } else if (cote === "d") {
-      initialAvantBrasMatrix = translateMat(initialAvantBrasMatrix, decalageX, 0, 0);
+    } else if (side === "r") {
+      initForearmMatrix = translateMat(initForearmMatrix, deltaX, 0, 0);
     }
 
-    return initialAvantBrasMatrix;
+    return initForearmMatrix;
   }
 
   /**
-   *
-   * @param cote
+   * Creates the initial transformation matrix for an eye of the robot based on the
+   * chosen 'side'. This matrix moves an eye to its initial position (based on the
+   * 'side') from the initial position of the head.
+   * @param side : string The side, 'l' for left or 'r' for right, of the eye for
+   *                      which the matrix is created. If it's not one of these 2
+   *                      options, then the identity matrix is returned.
    * @returns {THREE.Matrix4}
    */
-  initialYeuxMatrix(cote) {
-    let initYeuxMatrix = idMat4();
-    const decalageXZ = this.headRadius / 2;
+  initialEyeMatrix(side) {
+    const deltaXZ = this.headRadius/2;
 
-    if (cote === "g") {
-      initYeuxMatrix = translateMat(initYeuxMatrix, -decalageXZ, 0, decalageXZ);
+    let initEyeMatrix = idMat4();
+    if (side === "l") {
+      initEyeMatrix = translateMat(initEyeMatrix, -deltaXZ, 0, deltaXZ);
 
-    } else if (cote === "d") {
-      initYeuxMatrix = translateMat(initYeuxMatrix, decalageXZ, 0, decalageXZ);
+    } else if (side === "r") {
+      initEyeMatrix = translateMat(initEyeMatrix, deltaXZ, 0, deltaXZ);
     }
 
-    return initYeuxMatrix;
+    return initEyeMatrix;
   }
 
   /**
    *
    */
   initialize() {
+    // Geometry
     // Torso
     var torsoGeometry = new THREE.CubeGeometry(2*this.torsoRadius, this.torsoHeight, this.torsoRadius, 64);
     this.torso = new THREE.Mesh(torsoGeometry, this.material);
@@ -432,156 +439,156 @@ class Robot {
     var headGeometry = new THREE.CubeGeometry(2*this.headRadius, this.headRadius, this.headRadius);
     this.head = new THREE.Mesh(headGeometry, this.material);
 
-    // Add parts
-    // Bras
-    let brasGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.brasG = new THREE.Mesh(brasGeometry, this.material);
-    this.brasD = new THREE.Mesh(brasGeometry, this.material);
+    // Eyes
+    let eyeLGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.eyeL = new THREE.Mesh(eyeLGeometry, this.material);
+    let eyeRGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.eyeR = new THREE.Mesh(eyeRGeometry, this.material);
 
-    // Avant-bras
-    let avantBrasGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.avantBrasG = new THREE.Mesh(avantBrasGeometry, this.material);
-    this.avantBrasD = new THREE.Mesh(avantBrasGeometry, this.material);
+    // Arms
+    let ArmsGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.armL = new THREE.Mesh(ArmsGeometry, this.material);
+    this.armR = new THREE.Mesh(ArmsGeometry, this.material);
 
-    // Cuisses
-    let cuisseGGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.cuisseG = new THREE.Mesh(cuisseGGeometry, this.material);
-    let cuisseDGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.cuisseD = new THREE.Mesh(cuisseDGeometry, this. material);
+    // Forearms
+    let ForearmsGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.forearmL = new THREE.Mesh(ForearmsGeometry, this.material);
+    this.forearmR = new THREE.Mesh(ForearmsGeometry, this.material);
 
-    // Jambes
-    let jambeGGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.jambeG = new THREE.Mesh(jambeGGeometry, this.material);
-    let jambeDGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.jambeD = new THREE.Mesh(jambeDGeometry, this.material);
+    // Thighs
+    let thighLGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.thighL = new THREE.Mesh(thighLGeometry, this.material);
+    let thighRGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.thighR = new THREE.Mesh(thighRGeometry, this. material);
 
-    // Yeux
-    let oeilGGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.oeilG = new THREE.Mesh(oeilGGeometry, this.material);
-    let oeilDGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.oeilD = new THREE.Mesh(oeilDGeometry, this.material);
+    // Legs
+    let legLGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.legL = new THREE.Mesh(legLGeometry, this.material);
+    let legRGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.legR = new THREE.Mesh(legRGeometry, this.material);
 
     // Transformations
-    // Torse transformation
-    this.torsoInitialMatrix = this.initialTorsoMatrix();
+    // Torso transformation
+    this.torsoInitMatrix = this.initialTorsoMatrix();
     this.torsoMatrix = idMat4();
-    this.torso.setMatrix(this.torsoInitialMatrix);
+    this.torso.setMatrix(this.torsoInitMatrix);
 
     // Head transformation
-    this.headInitialMatrix = this.initialHeadMatrix();
+    this.headInitMatrix = this.initialHeadMatrix();
     this.headMatrix = idMat4();
-    let matrix = multMat(this.torsoInitialMatrix, this.headInitialMatrix);
+    let matrix = multMat(this.torsoInitMatrix, this.headInitMatrix);
     this.head.setMatrix(matrix);
 
-    // Add transformations
-    // Yeux tranformations
-    this.yeuxRescaleMat = rescaleMat(idMat4(), this.eyesRadius, this.eyesRadius, this.eyesRadius);
+    // Eyes tranformations
+    this.EyesRescaleMat = rescaleMat(idMat4(), this.eyesRadius, this.eyesRadius, this.eyesRadius);
 
-    this.oeilGInitMat = this.initialYeuxMatrix("g");
-    let m = multMat(matrix, this.oeilGInitMat);
-    m = multMat(m, this.yeuxRescaleMat);
-    this.oeilG.setMatrix(m);
+    // Eye left
+    this.eyeLInitMat = this.initialEyeMatrix("l");
+    let m = multMat(matrix, this.eyeLInitMat);
+    m = multMat(m, this.EyesRescaleMat);
+    this.eyeL.setMatrix(m);
 
-    this.oeilDInitMat = this.initialYeuxMatrix("d");
-    m = multMat(matrix, this.oeilDInitMat);
-    m = multMat(m, this.yeuxRescaleMat);
-    this.oeilD.setMatrix(m);
+    // Eye right
+    this.eyeRInitMat = this.initialEyeMatrix("r");
+    m = multMat(matrix, this.eyeRInitMat);
+    m = multMat(m, this.EyesRescaleMat);
+    this.eyeR.setMatrix(m);
 
-    // Bras transformations
-    this.brasRescaleMat = rescaleMat(idMat4(), this.ArmsHeight, this.ArmsRadius, this.ArmsRadius);
-    this.brasRescaleMatInv = invertMat(this.brasRescaleMat);
+    // Arms transformations
+    this.armsRescaleMat = rescaleMat(idMat4(), this.ArmsHeight, this.ArmsRadius, this.ArmsRadius);
+    this.armsRescaleMatInv = invertMat(this.armsRescaleMat);
 
-    // Bras gauche
-    this.brasGMatrix = idMat4();
-    this.brasGRotateMat= idMat4();
-    this.brasGInitMat = this.initialBrasMatrix("g");
-    let mg = multMat(this.brasGInitMat, this.brasRescaleMat);
-    mg = multMat(this.torsoInitialMatrix, mg);
-    this.brasG.setMatrix(mg);
+    // Arm left
+    this.armLMatrix = idMat4();
+    this.armLRotateMat= idMat4();
+    this.armLInitMat = this.initialArmMatrix("l");
+    let mg = multMat(this.armLInitMat, this.armsRescaleMat);
+    mg = multMat(this.torsoInitMatrix, mg);
+    this.armL.setMatrix(mg);
 
-    // Bras droit
+    // Arm right
     this.brasDMatrix = idMat4();
     this.brasDRotateMat= idMat4();
-    this.brasDInitMat = this.initialBrasMatrix("d");
-    let md = multMat(this.brasDInitMat, this.brasRescaleMat);
-    md = multMat(this.torsoInitialMatrix, md);
-    this.brasD.setMatrix(md);
+    this.brasDInitMat = this.initialArmMatrix("r");
+    let md = multMat(this.brasDInitMat, this.armsRescaleMat);
+    md = multMat(this.torsoInitMatrix, md);
+    this.armR.setMatrix(md);
 
-    // Avant-Bras transformations
+    // Forearms transformations
     this.avantBrasRescaleMat = rescaleMat(idMat4(), this.forearmsHeight, this.forearmsRadius, this.forearmsRadius);
 
-    // Avant-bras gauche
+    // Forearm left
     this.avantBrasGMatrix = idMat4();
     this.avantBrasGRotateMat = idMat4();
-    this.avantBrasGInitMat = this.initialAvantBrasMatrix("g");
-    mg = multMat(mg, this.brasRescaleMatInv);
+    this.avantBrasGInitMat = this.initialForearmMatrix("l");
+    mg = multMat(mg, this.armsRescaleMatInv);
     mg = multMat(mg, this.avantBrasGInitMat);
     mg = multMat(mg, this.avantBrasRescaleMat);
-    this.avantBrasG.setMatrix(mg);
+    this.forearmL.setMatrix(mg);
 
-    // Avant-bras droit
+    // Forearm right
     this.avantBrasDMatrix = idMat4();
     this.avantBrasDRotateMat = idMat4();
-    this.avantBrasDInitMat = this.initialAvantBrasMatrix("d");
-    md = multMat(md, this.brasRescaleMatInv);
+    this.avantBrasDInitMat = this.initialForearmMatrix("r");
+    md = multMat(md, this.armsRescaleMatInv);
     md = multMat(md, this.avantBrasDInitMat);
     md = multMat(md, this.avantBrasRescaleMat);
-    this.avantBrasD.setMatrix(md);
+    this.forearmR.setMatrix(md);
 
-    // Cuisses transformations
+    // Thighs transformations
     this.cuisseRescaleMat = rescaleMat(idMat4(), this.thighsRadius, this.thighsHeight/2, this.thighsRadius);
     this.cuisseRescaleMatInv = invertMat(this.cuisseRescaleMat);
 
-    // Cuisse Gauche
+    // Thigh left
     this.cuisseGInitMat = this.initialThighMatrix("l");
     this.cuisseGMatrix = idMat4();
     this.cuisseGRotatMat = idMat4();
-    let matrixG = multMat(this.torsoInitialMatrix, this.cuisseGInitMat);
+    let matrixG = multMat(this.torsoInitMatrix, this.cuisseGInitMat);
     matrixG = multMat(matrixG, this.cuisseRescaleMat);
-    this.cuisseG.setMatrix(matrixG);
+    this.thighL.setMatrix(matrixG);
     
-    // Cuisse Droite
+    // Thigh right
     this.cuisseDInitMat = this.initialThighMatrix("r");
     this.cuisseDMatrix = idMat4();
     this.cuisseDRotatMat = idMat4();
-    let matrixD = multMat(this.torsoInitialMatrix, this.cuisseDInitMat);
+    let matrixD = multMat(this.torsoInitMatrix, this.cuisseDInitMat);
     matrixD = multMat(matrixD, this.cuisseRescaleMat);
-    this.cuisseD.setMatrix(matrixD);
+    this.thighR.setMatrix(matrixD);
 
-    // Jambes transformations
+    // Legs transformations
     this.jambeRescaleMat = rescaleMat(idMat4(), this.legsRadius, this.legsHeight/2, this.legsRadius);
 
-    // Jambe Gauche
-    this.jambeGInitMat = this.initialJambeMatrix("g");
+    // Leg left
+    this.jambeGInitMat = this.initialLegMatrix();
     this.jambeGMatrix = idMat4();
     this.jambeGRotatMat = idMat4();
     matrixG = multMat(matrixG, this.cuisseRescaleMatInv);
     matrixG = multMat(matrixG, this.jambeGInitMat);
     matrixG = multMat(matrixG, this.jambeRescaleMat);
-    this.jambeG.setMatrix(matrixG);
+    this.legL.setMatrix(matrixG);
 
-    // Jambe droite
-    this.jambeDInitMat = this.initialJambeMatrix("d");
+    // Leg right
+    this.jambeDInitMat = this.initialLegMatrix();
     this.jambeDMatrix = idMat4();
     this.jambeDRotatMat = idMat4();
     matrixD = multMat(matrixD, this.cuisseRescaleMatInv);
     matrixD = multMat(matrixD, this.jambeDInitMat);
     matrixD = multMat(matrixD, this.jambeRescaleMat);
-    this.jambeD.setMatrix(matrixD);
+    this.legR.setMatrix(matrixD);
 
     // Add robot to scene
     scene.add(this.torso);
     scene.add(this.head);
-    scene.add(this.oeilG);
-    scene.add(this.oeilD);
-    scene.add(this.brasG);
-    scene.add(this.brasD);
-    scene.add(this.avantBrasD);
-    scene.add(this.avantBrasG);
-    scene.add(this.cuisseG);
-    scene.add(this.cuisseD);
-    scene.add(this.jambeG);
-    scene.add(this.jambeD);
+    scene.add(this.eyeL);
+    scene.add(this.eyeR);
+    scene.add(this.armL);
+    scene.add(this.armR);
+    scene.add(this.forearmR);
+    scene.add(this.forearmL);
+    scene.add(this.thighL);
+    scene.add(this.thighR);
+    scene.add(this.legL);
+    scene.add(this.legR);
   }
 
   // Methods for moving/rotating the robot parts
@@ -597,7 +604,7 @@ class Robot {
     this.torsoMatrix = rotateMat(this.torsoMatrix, angle, "y");
     this.torsoMatrix = multMat(torsoMatrix, this.torsoMatrix);
 
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
     this.torso.setMatrix(matrix);
 
     this.walkDirection = rotateVec3(this.walkDirection, angle, "y");
@@ -637,7 +644,7 @@ class Robot {
   moveTorso(speed){
     this.torsoMatrix = translateMat(this.torsoMatrix, speed * this.walkDirection.x, speed * this.walkDirection.y, speed * this.walkDirection.z);
 
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
     this.torso.setMatrix(matrix);
 
     // Mise à jour de la tête et des yeux
@@ -713,7 +720,7 @@ class Robot {
       }
     }
 
-    let m = multMat(idMat4(), this.headInitialMatrix);
+    let m = multMat(idMat4(), this.headInitMatrix);
     m = translateMat(m, 0, -this.headRadius/2, 0);
     let im = invertMat(m);
 
@@ -725,7 +732,7 @@ class Robot {
     this.headMatrix = multMat(m, this.headMatrix);
 
     // Mise à jour de la tête et des yeux
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
     this.updateHead(matrix);
   }
 
@@ -743,14 +750,14 @@ class Robot {
     }
 
     // Mise à jour de la matrice de rotation du bras gauche
-    this.brasGRotateMat = idMat4();
-    this.brasGRotateMat = translateMat(this.brasGRotateMat, -this.ArmsHeight, 0, 0);
-    this.brasGRotateMat = rotateMat(this.brasGRotateMat, this.ArmLAngleY, "y");
-    this.brasGRotateMat = rotateMat(this.brasGRotateMat, this.ArmLAngleZ, "z");
-    this.brasGRotateMat = translateMat(this.brasGRotateMat, this.ArmsHeight, 0, 0);
+    this.armLRotateMat = idMat4();
+    this.armLRotateMat = translateMat(this.armLRotateMat, -this.ArmsHeight, 0, 0);
+    this.armLRotateMat = rotateMat(this.armLRotateMat, this.ArmLAngleY, "y");
+    this.armLRotateMat = rotateMat(this.armLRotateMat, this.ArmLAngleZ, "z");
+    this.armLRotateMat = translateMat(this.armLRotateMat, this.ArmsHeight, 0, 0);
 
     // update du bras gauche et de l'avant-bras gauche
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
     matrix = this.updateBrasG(matrix);
     this.updateAvantBrasG(matrix);
   }
@@ -776,7 +783,7 @@ class Robot {
     this.brasDRotateMat = translateMat(this.brasDRotateMat, -this.ArmsHeight, 0, 0);
 
     // update du bras droit et de l'avant-bras droit
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
     matrix = this.updateBrasD(matrix);
     this.updateAvantBrasD(matrix);
   }
@@ -795,15 +802,15 @@ class Robot {
     this.avantBrasGRotateMat = translateMat(this.avantBrasGRotateMat, this.forearmsHeight, 0, 0);
 
     // update de l'avant-bras gauche
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
-    matrix = multMat(matrix, this.brasGMatrix);
-    matrix = multMat(matrix, this.brasGInitMat);
-    matrix = multMat(matrix, this.brasGRotateMat);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
+    matrix = multMat(matrix, this.armLMatrix);
+    matrix = multMat(matrix, this.armLInitMat);
+    matrix = multMat(matrix, this.armLRotateMat);
     matrix = multMat(matrix, this.avantBrasGMatrix);
     matrix = multMat(matrix, this.avantBrasGInitMat);
     matrix = multMat(matrix, this.avantBrasGRotateMat);
     matrix = multMat(matrix, this.avantBrasRescaleMat);
-    this.avantBrasG.setMatrix(matrix);
+    this.forearmL.setMatrix(matrix);
   }
 
   /**
@@ -820,7 +827,7 @@ class Robot {
     this.avantBrasDRotateMat = translateMat(this.avantBrasDRotateMat, -this.forearmsHeight, 0, 0);
 
     // update de l'avant-bras gauche
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
     matrix = multMat(matrix, this.brasDMatrix);
     matrix = multMat(matrix, this.brasDInitMat);
     matrix = multMat(matrix, this.brasDRotateMat);
@@ -828,7 +835,7 @@ class Robot {
     matrix = multMat(matrix, this.avantBrasDInitMat);
     matrix = multMat(matrix, this.avantBrasDRotateMat);
     matrix = multMat(matrix, this.avantBrasRescaleMat);
-    this.avantBrasD.setMatrix(matrix);
+    this.forearmR.setMatrix(matrix);
   }
 
   /**
@@ -853,7 +860,7 @@ class Robot {
     this.cuisseGRotatMat = translateMat(this.cuisseGRotatMat, 0, this.thighsHeight/2, 0);
 
     // Mise à jour de la cuisse gauche et de la jambe gauche
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
     matrix = this.updateCuisseG(matrix);
     this.updateJambeG(matrix);
   }
@@ -880,7 +887,7 @@ class Robot {
     this.cuisseDRotatMat = translateMat(this.cuisseDRotatMat, 0, this.thighsHeight/2, 0);
 
     // Mise à jour de la cuisse droite et de la jambe droite
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
     matrix = this.updateCuisseD(matrix);
     this.updateJambeD(matrix);
   }
@@ -912,9 +919,9 @@ class Robot {
     matrix = multMat(this.cuisseGRotatMat, matrix);
     matrix = multMat(this.cuisseGInitMat, matrix);
     matrix = multMat(this.cuisseGMatrix, matrix);
-    matrix = multMat(this.torsoInitialMatrix, matrix);
+    matrix = multMat(this.torsoInitMatrix, matrix);
     matrix = multMat(this.torsoMatrix, matrix);
-    this.jambeG.setMatrix(matrix);
+    this.legL.setMatrix(matrix);
   }
 
   /**
@@ -944,9 +951,9 @@ class Robot {
     matrix = multMat(this.cuisseDRotatMat, matrix);
     matrix = multMat(this.cuisseDInitMat, matrix);
     matrix = multMat(this.cuisseDMatrix, matrix);
-    matrix = multMat(this.torsoInitialMatrix, matrix);
+    matrix = multMat(this.torsoInitMatrix, matrix);
     matrix = multMat(this.torsoMatrix, matrix);
-    this.jambeD.setMatrix(matrix);
+    this.legR.setMatrix(matrix);
   }
 
   // Methods for updating the robot parts
@@ -963,18 +970,18 @@ class Robot {
 
     // Mise à jour de la tête
     let matrix2 = multMat(matrix, this.headMatrix);
-    matrix2 = multMat(matrix2, this.headInitialMatrix);
+    matrix2 = multMat(matrix2, this.headInitMatrix);
     this.head.setMatrix(matrix2);
 
     // Mise à jour de l'oeil gauche
-    let m = multMat(matrix2, this.oeilGInitMat);
-    m = multMat(m, this.yeuxRescaleMat);
-    this.oeilG.setMatrix(m);
+    let m = multMat(matrix2, this.eyeLInitMat);
+    m = multMat(m, this.EyesRescaleMat);
+    this.eyeL.setMatrix(m);
 
     // Mise à jour de l'oeil droite
-    m = multMat(matrix2, this.oeilDInitMat);
-    m = multMat(m, this.yeuxRescaleMat);
-    this.oeilD.setMatrix(m);
+    m = multMat(matrix2, this.eyeRInitMat);
+    m = multMat(m, this.EyesRescaleMat);
+    this.eyeR.setMatrix(m);
   }
 
   /**
@@ -993,7 +1000,7 @@ class Robot {
     matrix2 = multMat(matrix2, this.cuisseGInitMat);
     matrix2 = multMat(matrix2, this.cuisseGRotatMat);
     matrix2 = multMat(matrix2, this.cuisseRescaleMat);
-    this.cuisseG.setMatrix(matrix2);
+    this.thighL.setMatrix(matrix2);
 
     // Retire le rescale de la cuisse gauche
     matrix2 = multMat(matrix2, this.cuisseRescaleMatInv);
@@ -1016,7 +1023,7 @@ class Robot {
     matrix2 = multMat(matrix2, this.cuisseDInitMat);
     matrix2 = multMat(matrix2, this.cuisseDRotatMat);
     matrix2 = multMat(matrix2, this.cuisseRescaleMat);
-    this.cuisseD.setMatrix(matrix2);
+    this.thighR.setMatrix(matrix2);
 
     // Retire le rescale de la cuisse droite
     matrix2 = multMat(matrix2, this.cuisseRescaleMatInv);
@@ -1037,7 +1044,7 @@ class Robot {
     matrix2 = multMat(matrix2, this.jambeGInitMat);
     matrix2 = multMat(matrix2, this.jambeGRotatMat);
     matrix2 = multMat(matrix2, this.jambeRescaleMat);
-    this.jambeG.setMatrix(matrix2);
+    this.legL.setMatrix(matrix2);
   }
 
   /**
@@ -1054,7 +1061,7 @@ class Robot {
     matrix2 = multMat(matrix2, this.jambeDInitMat);
     matrix2 = multMat(matrix2, this.jambeDRotatMat);
     matrix2 = multMat(matrix2, this.jambeRescaleMat);
-    this.jambeD.setMatrix(matrix2);
+    this.legR.setMatrix(matrix2);
   }
 
   /**
@@ -1068,14 +1075,14 @@ class Robot {
     // matrix : la matrice de toutes les tranformation des membres qui précèdent le bras gauche dans la
     //    hiérarchie des membres du robot.
 
-    let matrix2 = multMat(matrix, this.brasGMatrix);
-    matrix2 = multMat(matrix2, this.brasGInitMat);
-    matrix2 = multMat(matrix2, this.brasGRotateMat);
-    matrix2 = multMat(matrix2, this.brasRescaleMat);
-    this.brasG.setMatrix(matrix2);
+    let matrix2 = multMat(matrix, this.armLMatrix);
+    matrix2 = multMat(matrix2, this.armLInitMat);
+    matrix2 = multMat(matrix2, this.armLRotateMat);
+    matrix2 = multMat(matrix2, this.armsRescaleMat);
+    this.armL.setMatrix(matrix2);
 
     // Retire le rescale du bras gauche
-    matrix2 = multMat(matrix2, this.brasRescaleMatInv);
+    matrix2 = multMat(matrix2, this.armsRescaleMatInv);
     return matrix2;
   }
 
@@ -1093,11 +1100,11 @@ class Robot {
     let matrix2 = multMat(matrix, this.brasDMatrix);
     matrix2 = multMat(matrix2, this.brasDInitMat);
     matrix2 = multMat(matrix2, this.brasDRotateMat);
-    matrix2 = multMat(matrix2, this.brasRescaleMat);
-    this.brasD.setMatrix(matrix2);
+    matrix2 = multMat(matrix2, this.armsRescaleMat);
+    this.armR.setMatrix(matrix2);
 
     // Retire le rescale du bras droit
-    matrix2 = multMat(matrix2, this.brasRescaleMatInv);
+    matrix2 = multMat(matrix2, this.armsRescaleMatInv);
     return matrix2;
   }
 
@@ -1115,7 +1122,7 @@ class Robot {
     matrix2 = multMat(matrix2, this.avantBrasGInitMat);
     matrix2 = multMat(matrix2, this.avantBrasGRotateMat);
     matrix2 = multMat(matrix2, this.avantBrasRescaleMat);
-    this.avantBrasG.setMatrix(matrix2);
+    this.forearmL.setMatrix(matrix2);
   }
 
   /**
@@ -1132,7 +1139,7 @@ class Robot {
     matrix2 = multMat(matrix2, this.avantBrasDInitMat);
     matrix2 = multMat(matrix2, this.avantBrasDRotateMat);
     matrix2 = multMat(matrix2, this.avantBrasRescaleMat);
-    this.avantBrasD.setMatrix(matrix2);
+    this.forearmR.setMatrix(matrix2);
   }
 
   // Methods for the walking animation of the robot
@@ -1439,7 +1446,7 @@ class Robot {
 
     // Matrices complètes des tranformations des jambes
     // Jambe Gauche
-    let matrixG = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrixG = multMat(this.torsoMatrix, this.torsoInitMatrix);
     matrixG = multMat(matrixG, this.cuisseGMatrix);
     matrixG = multMat(matrixG, this.cuisseGInitMat);
     matrixG = multMat(matrixG, this.cuisseGRotatMat);
@@ -1449,7 +1456,7 @@ class Robot {
     matrixG = multMat(matrixG, this.jambeRescaleMat);
 
     // Jambe droite
-    let matrixD = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrixD = multMat(this.torsoMatrix, this.torsoInitMatrix);
     matrixD = multMat(matrixD, this.cuisseDMatrix);
     matrixD = multMat(matrixD, this.cuisseDInitMat);
     matrixD = multMat(matrixD, this.cuisseDRotatMat);
@@ -1483,7 +1490,7 @@ class Robot {
     // Déplacement du robot pour qu'il soit en contact avec le sol.
     this.torsoMatrix = translateMat(this.torsoMatrix, 0, deltaY, 0);
 
-    let matrix = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
     this.torso.setMatrix(matrix);
 
     // Mise à jour de tous les autres membres du robot
@@ -1513,7 +1520,7 @@ class Robot {
 
     // Emplacement du centre du torse
     let centreTorse = new THREE.Vector3(0, 0, 0);
-    let m = multMat(this.torsoMatrix, this.torsoInitialMatrix);
+    let m = multMat(this.torsoMatrix, this.torsoInitMatrix);
     centreTorse.applyMatrix4(m);
 
     // Distance entre le point à regarder au sol et le centre du torse
@@ -1577,7 +1584,7 @@ class Robot {
     // Emplacement du centre de la tête
     let centreTete = new THREE.Vector3(0,0,0);
     m = multMat(m, this.headMatrix);
-    m = multMat(m, this.headInitialMatrix);
+    m = multMat(m, this.headInitMatrix);
     centreTete.applyMatrix4(m);
 
     // Distance entre le point à regarder au sol et le centre de la tête
