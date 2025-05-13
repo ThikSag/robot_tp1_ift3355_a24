@@ -4,22 +4,22 @@ THREE.Object3D.prototype.setMatrix = function(a) {
   this.matrix.decompose(this.position, this.quaternion, this.scale);
 };
 
-var start = Date.now();
+const start = Date.now();
 
 // SETUP RENDERER AND SCENE
-var scene = new THREE.Scene();
-var renderer = new THREE.WebGLRenderer();
+let scene = new THREE.Scene();
+let renderer = new THREE.WebGLRenderer();
 renderer.setClearColor(0xffffff); // white background colour
 document.body.appendChild(renderer.domElement);
 
 // SETUP CAMERA
-var camera = new THREE.PerspectiveCamera(30, 1, 0.1, 1000); // view angle, aspect ratio, near, far
+let camera = new THREE.PerspectiveCamera(30, 1, 0.1, 1000); // view angle, aspect ratio, near, far
 camera.position.set(10,5,10);
 camera.lookAt(scene.position);
 scene.add(camera);
 
 // SETUP ORBIT CONTROL OF THE CAMERA
-var controls = new THREE.OrbitControls(camera);
+let controls = new THREE.OrbitControls(camera);
 controls.damping = 0.2;
 
 // ADAPT TO WINDOW RESIZE
@@ -33,13 +33,13 @@ window.addEventListener('resize', resize);
 resize();
 
 // FLOOR WITH CHECKERBOARD
-var floorTexture = new THREE.ImageUtils.loadTexture('images/tile.jpg');
+let floorTexture = new THREE.ImageUtils.loadTexture('images/tile.jpg');
 floorTexture.wrapS = floorTexture.wrapT = THREE.MirroredRepeatWrapping;
 floorTexture.repeat.set(4, 4);
 
-var floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture, side: THREE.DoubleSide });
-var floorGeometry = new THREE.PlaneBufferGeometry(15, 15);
-var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+let floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture, side: THREE.DoubleSide });
+let floorGeometry = new THREE.PlaneBufferGeometry(15, 15);
+let floor = new THREE.Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = Math.PI / 2;
 floor.position.y = 0.0;
 scene.add(floor);
@@ -423,6 +423,9 @@ class Robot {
       initEyeMatrix = translateMat(initEyeMatrix, deltaXZ, 0, deltaXZ);
     }
 
+    let rescaleEyeMatrix = rescaleMat(idMat4(), this.eyesRadius, this.eyesRadius, this.eyesRadius);
+    initEyeMatrix = multMat(initEyeMatrix, rescaleEyeMatrix);
+
     return initEyeMatrix;
   }
 
@@ -431,21 +434,19 @@ class Robot {
    * necessary matrices to transform these parts and adds the robot to the world/scene.
    */
   initialize() {
-    // TODO : Rework the matrices in this methods to remove unnecessary ones and to move others to their affiliated init matrix method. Also add comments to clarify some matrices.
     // Geometry
     // Torso
-    var torsoGeometry = new THREE.CubeGeometry(2*this.torsoRadius, this.torsoHeight, this.torsoRadius, 64);
+    let torsoGeometry = new THREE.CubeGeometry(2*this.torsoRadius, this.torsoHeight, this.torsoRadius, 64);
     this.torso = new THREE.Mesh(torsoGeometry, this.material);
 
     // Head
-    var headGeometry = new THREE.CubeGeometry(2*this.headRadius, this.headRadius, this.headRadius);
+    let headGeometry = new THREE.CubeGeometry(2*this.headRadius, this.headRadius, this.headRadius);
     this.head = new THREE.Mesh(headGeometry, this.material);
 
     // Eyes
-    let eyeLGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.eyeL = new THREE.Mesh(eyeLGeometry, this.material);
-    let eyeRGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.eyeR = new THREE.Mesh(eyeRGeometry, this.material);
+    let eyeGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.eyeL = new THREE.Mesh(eyeGeometry, this.material);
+    this.eyeR = new THREE.Mesh(eyeGeometry, this.material);
 
     // Arms
     let ArmsGeometry = new THREE.SphereGeometry(1, 32, 16);
@@ -458,44 +459,38 @@ class Robot {
     this.forearmR = new THREE.Mesh(ForearmsGeometry, this.material);
 
     // Thighs
-    let thighLGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.thighL = new THREE.Mesh(thighLGeometry, this.material);
-    let thighRGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.thighR = new THREE.Mesh(thighRGeometry, this. material);
+    let thighGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.thighL = new THREE.Mesh(thighGeometry, this.material);
+    this.thighR = new THREE.Mesh(thighGeometry, this. material);
 
     // Legs
-    let legLGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.legL = new THREE.Mesh(legLGeometry, this.material);
-    let legRGeometry = new THREE.SphereGeometry(1, 32, 16);
-    this.legR = new THREE.Mesh(legRGeometry, this.material);
+    let legGeometry = new THREE.SphereGeometry(1, 32, 16);
+    this.legL = new THREE.Mesh(legGeometry, this.material);
+    this.legR = new THREE.Mesh(legGeometry, this.material);
 
     // Transformations
     // Torso transformation
     this.torsoInitMatrix = this.initialTorsoMatrix();
     this.torsoMatrix = idMat4();  // The combination of all the transformations applied
-                                  // to the torso after the initialisation.
+                                  // to the torso after the initialisation of the robot.
     this.torso.setMatrix(this.torsoInitMatrix);
 
     // Head transformation
     this.headInitMatrix = this.initialHeadMatrix();
     this.headMatrix = idMat4();  // The combination of all the transformations applied
-                                 // to the head after the initialisation.
+                                 // to the head after the initialisation of the robot.
     let matrix = multMat(this.torsoInitMatrix, this.headInitMatrix);
     this.head.setMatrix(matrix);
 
     // Eyes transformations
-    this.EyesRescaleMat = rescaleMat(idMat4(), this.eyesRadius, this.eyesRadius, this.eyesRadius);
-
     // Eye left
     this.eyeLInitMat = this.initialEyeMatrix("l");
     let m = multMat(matrix, this.eyeLInitMat);
-    m = multMat(m, this.EyesRescaleMat);
     this.eyeL.setMatrix(m);
 
     // Eye right
     this.eyeRInitMat = this.initialEyeMatrix("r");
     m = multMat(matrix, this.eyeRInitMat);
-    m = multMat(m, this.EyesRescaleMat);
     this.eyeR.setMatrix(m);
 
     // Arms transformations
@@ -503,17 +498,17 @@ class Robot {
     this.armsRescaleMatInv = invertMat(this.armsRescaleMat);
 
     // Arm left
-    this.armLMatrix = idMat4();
-    this.armLRotateMat= idMat4();
     this.armLInitMat = this.initialArmMatrix("l");
+    this.armLRotateMat= idMat4(); // The combination of all the rotations applied to the
+                                  // left arm after the initialisation of the robot.
     let ml = multMat(this.armLInitMat, this.armsRescaleMat);
     ml = multMat(this.torsoInitMatrix, ml);
     this.armL.setMatrix(ml);
 
     // Arm right
-    this.armRMatrix = idMat4();
-    this.armRRotateMat= idMat4();
     this.armRInitMat = this.initialArmMatrix("r");
+    this.armRRotateMat= idMat4(); // The combination of all the rotations applied to the
+                                  // right arm after the initialisation of the robot.
     let mr = multMat(this.armRInitMat, this.armsRescaleMat);
     mr = multMat(this.torsoInitMatrix, mr);
     this.armR.setMatrix(mr);
@@ -522,18 +517,20 @@ class Robot {
     this.forearmsRescaleMat = rescaleMat(idMat4(), this.forearmsHeight, this.forearmsRadius, this.forearmsRadius);
 
     // Forearm left
-    this.forearmLMatrix = idMat4();
-    this.forearmLRotateMat = idMat4();
     this.forearmLInitMat = this.initialForearmMatrix("l");
+    this.forearmLRotateMat = idMat4(); // The combination of all the rotations applied
+                                       // to the left forearm after the initialisation
+                                       // of the robot.
     ml = multMat(ml, this.armsRescaleMatInv);
     ml = multMat(ml, this.forearmLInitMat);
     ml = multMat(ml, this.forearmsRescaleMat);
     this.forearmL.setMatrix(ml);
 
     // Forearm right
-    this.forearmRMatrix = idMat4();
-    this.forearmRRotateMat = idMat4();
     this.forearmRInitMat = this.initialForearmMatrix("r");
+    this.forearmRRotateMat = idMat4(); // The combination of all the rotations applied
+                                       // to the right forearm after the initialisation
+                                       // of the robot.
     mr = multMat(mr, this.armsRescaleMatInv);
     mr = multMat(mr, this.forearmRInitMat);
     mr = multMat(mr, this.forearmsRescaleMat);
@@ -545,16 +542,18 @@ class Robot {
 
     // Thigh left
     this.thighLInitMat = this.initialThighMatrix("l");
-    this.thighLMatrix = idMat4();
-    this.thighLRotatMat = idMat4();
+    this.thighLRotatMat = idMat4(); // The combination of all the rotations applied
+                                    // to the left thigh after the initialisation
+                                    // of the robot.
     let matrixL = multMat(this.torsoInitMatrix, this.thighLInitMat);
     matrixL = multMat(matrixL, this.thighsRescaleMat);
     this.thighL.setMatrix(matrixL);
     
     // Thigh right
     this.thighRInitMat = this.initialThighMatrix("r");
-    this.thighRMatrix = idMat4();
-    this.thighRRotatMat = idMat4();
+    this.thighRRotatMat = idMat4(); // The combination of all the rotations applied
+                                    // to the right thigh after the initialisation
+                                    // of the robot.
     let matrixR = multMat(this.torsoInitMatrix, this.thighRInitMat);
     matrixR = multMat(matrixR, this.thighsRescaleMat);
     this.thighR.setMatrix(matrixR);
@@ -564,8 +563,8 @@ class Robot {
 
     // Leg left
     this.legLInitMat = this.initialLegMatrix();
-    this.legLMatrix = idMat4();
-    this.legLRotatMat = idMat4();
+    this.legLRotatMat = idMat4(); // The combination of all the rotations applied to the
+                                  // left leg after the initialisation of the robot.
     matrixL = multMat(matrixL, this.thighsRescaleMatInv);
     matrixL = multMat(matrixL, this.legLInitMat);
     matrixL = multMat(matrixL, this.legsRescaleMat);
@@ -573,8 +572,8 @@ class Robot {
 
     // Leg right
     this.legRInitMat = this.initialLegMatrix();
-    this.legRMatrix = idMat4();
-    this.legRRotatMat = idMat4();
+    this.legRRotatMat = idMat4(); // The combination of all the rotations applied to the
+                                  // right leg after the initialisation of the robot.
     matrixR = multMat(matrixR, this.thighsRescaleMatInv);
     matrixR = multMat(matrixR, this.legRInitMat);
     matrixR = multMat(matrixR, this.legsRescaleMat);
@@ -827,10 +826,8 @@ class Robot {
 
     // Update the left forearm
     let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
-    matrix = multMat(matrix, this.armLMatrix);
     matrix = multMat(matrix, this.armLInitMat);
     matrix = multMat(matrix, this.armLRotateMat);
-    matrix = multMat(matrix, this.forearmLMatrix);
     matrix = multMat(matrix, this.forearmLInitMat);
     matrix = multMat(matrix, this.forearmLRotateMat);
     matrix = multMat(matrix, this.forearmsRescaleMat);
@@ -853,10 +850,8 @@ class Robot {
 
     // Update the right forearm
     let matrix = multMat(this.torsoMatrix, this.torsoInitMatrix);
-    matrix = multMat(matrix, this.armRMatrix);
     matrix = multMat(matrix, this.armRInitMat);
     matrix = multMat(matrix, this.armRRotateMat);
-    matrix = multMat(matrix, this.forearmRMatrix);
     matrix = multMat(matrix, this.forearmRInitMat);
     matrix = multMat(matrix, this.forearmRRotateMat);
     matrix = multMat(matrix, this.forearmsRescaleMat);
@@ -947,12 +942,10 @@ class Robot {
     this.legLRotatMat = translateMat(this.legLRotatMat, 0, this.legsHeight/2, 0);
 
     // Update the left leg
-    let matrix = multMat(this.legLMatrix, this.legLInitMat);
-    matrix = multMat(matrix, this.legLRotatMat);
+    let matrix = multMat(this.legLInitMat, this.legLRotatMat);
     matrix = multMat(matrix, this.legsRescaleMat);
     matrix = multMat(this.thighLRotatMat, matrix);
     matrix = multMat(this.thighLInitMat, matrix);
-    matrix = multMat(this.thighLMatrix, matrix);
     matrix = multMat(this.torsoInitMatrix, matrix);
     matrix = multMat(this.torsoMatrix, matrix);
     this.legL.setMatrix(matrix);
@@ -982,12 +975,10 @@ class Robot {
     this.legRRotatMat = translateMat(this.legRRotatMat, 0, this.legsHeight/2, 0);
 
     // Update the right leg
-    let matrix = multMat(this.legRMatrix, this.legRInitMat);
-    matrix = multMat(matrix, this.legRRotatMat);
+    let matrix = multMat(this.legRInitMat, this.legRRotatMat);
     matrix = multMat(matrix, this.legsRescaleMat);
     matrix = multMat(this.thighRRotatMat, matrix);
     matrix = multMat(this.thighRInitMat, matrix);
-    matrix = multMat(this.thighRMatrix, matrix);
     matrix = multMat(this.torsoInitMatrix, matrix);
     matrix = multMat(this.torsoMatrix, matrix);
     this.legR.setMatrix(matrix);
@@ -1009,12 +1000,10 @@ class Robot {
 
     // Update of the left eye
     let m = multMat(matrix2, this.eyeLInitMat);
-    m = multMat(m, this.EyesRescaleMat);
     this.eyeL.setMatrix(m);
 
     // Update of the right eye
     m = multMat(matrix2, this.eyeRInitMat);
-    m = multMat(m, this.EyesRescaleMat);
     this.eyeR.setMatrix(m);
   }
 
@@ -1028,8 +1017,7 @@ class Robot {
    *                          for the scaling of the thigh).
    */
   updateThighLeft(matrix) {
-    let matrix2 = multMat(matrix, this.thighLMatrix);
-    matrix2 = multMat(matrix2, this.thighLInitMat);
+    let matrix2 = multMat(matrix, this.thighLInitMat);
     matrix2 = multMat(matrix2, this.thighLRotatMat);
     matrix2 = multMat(matrix2, this.thighsRescaleMat);
     this.thighL.setMatrix(matrix2);
@@ -1050,8 +1038,7 @@ class Robot {
    *                          (except for the scaling of the thigh).
    */
   updateThighRight(matrix) {
-    let matrix2 = multMat(matrix, this.thighRMatrix);
-    matrix2 = multMat(matrix2, this.thighRInitMat);
+    let matrix2 = multMat(matrix, this.thighRInitMat);
     matrix2 = multMat(matrix2, this.thighRRotatMat);
     matrix2 = multMat(matrix2, this.thighsRescaleMat);
     this.thighR.setMatrix(matrix2);
@@ -1068,8 +1055,7 @@ class Robot {
    *                               that precedes the left leg in the hierarchy.
    */
   updateLegLeft(matrix) {
-    let matrix2 = multMat(matrix, this.legLMatrix);
-    matrix2 = multMat(matrix2, this.legLInitMat);
+    let matrix2 = multMat(matrix, this.legLInitMat);
     matrix2 = multMat(matrix2, this.legLRotatMat);
     matrix2 = multMat(matrix2, this.legsRescaleMat);
     this.legL.setMatrix(matrix2);
@@ -1082,8 +1068,7 @@ class Robot {
    *                               parts that precedes the right leg in the hierarchy.
    */
   updateLegRight(matrix) {
-    let matrix2 = multMat(matrix, this.legRMatrix);
-    matrix2 = multMat(matrix2, this.legRInitMat);
+    let matrix2 = multMat(matrix, this.legRInitMat);
     matrix2 = multMat(matrix2, this.legRRotatMat);
     matrix2 = multMat(matrix2, this.legsRescaleMat);
     this.legR.setMatrix(matrix2);
@@ -1099,8 +1084,7 @@ class Robot {
    *                          for the scaling of the arm).
    */
   updateArmLeft(matrix) {
-    let matrix2 = multMat(matrix, this.armLMatrix);
-    matrix2 = multMat(matrix2, this.armLInitMat);
+    let matrix2 = multMat(matrix, this.armLInitMat);
     matrix2 = multMat(matrix2, this.armLRotateMat);
     matrix2 = multMat(matrix2, this.armsRescaleMat);
     this.armL.setMatrix(matrix2);
@@ -1121,8 +1105,7 @@ class Robot {
    *                          for the scaling of the arm).
    */
   updateArmRight(matrix) {
-    let matrix2 = multMat(matrix, this.armRMatrix);
-    matrix2 = multMat(matrix2, this.armRInitMat);
+    let matrix2 = multMat(matrix, this.armRInitMat);
     matrix2 = multMat(matrix2, this.armRRotateMat);
     matrix2 = multMat(matrix2, this.armsRescaleMat);
     this.armR.setMatrix(matrix2);
@@ -1140,8 +1123,7 @@ class Robot {
    *                               hierarchy.
    */
   updateForearmLeft(matrix) {
-    let matrix2 = multMat(matrix, this.forearmLMatrix);
-    matrix2 = multMat(matrix2, this.forearmLInitMat);
+    let matrix2 = multMat(matrix, this.forearmLInitMat);
     matrix2 = multMat(matrix2, this.forearmLRotateMat);
     matrix2 = multMat(matrix2, this.forearmsRescaleMat);
     this.forearmL.setMatrix(matrix2);
@@ -1155,8 +1137,7 @@ class Robot {
    *                               hierarchy.
    */
   updateForearmRight(matrix) {
-    let matrix2 = multMat(matrix, this.forearmRMatrix);
-    matrix2 = multMat(matrix2, this.forearmRInitMat);
+    let matrix2 = multMat(matrix, this.forearmRInitMat);
     matrix2 = multMat(matrix2, this.forearmRRotateMat);
     matrix2 = multMat(matrix2, this.forearmsRescaleMat);
     this.forearmR.setMatrix(matrix2);
@@ -1476,20 +1457,16 @@ class Robot {
     // Complete transformation matrices of the legs
     // Leg left
     let matrixL = multMat(this.torsoMatrix, this.torsoInitMatrix);
-    matrixL = multMat(matrixL, this.thighLMatrix);
     matrixL = multMat(matrixL, this.thighLInitMat);
     matrixL = multMat(matrixL, this.thighLRotatMat);
-    matrixL = multMat(matrixL, this.legLMatrix);
     matrixL = multMat(matrixL, this.legLInitMat);
     matrixL = multMat(matrixL, this.legLRotatMat);
     matrixL = multMat(matrixL, this.legsRescaleMat);
 
     // Leg right
     let matrixR = multMat(this.torsoMatrix, this.torsoInitMatrix);
-    matrixR = multMat(matrixR, this.thighRMatrix);
     matrixR = multMat(matrixR, this.thighRInitMat);
     matrixR = multMat(matrixR, this.thighRRotatMat);
-    matrixR = multMat(matrixR, this.legRMatrix);
     matrixR = multMat(matrixR, this.legRInitMat);
     matrixR = multMat(matrixR, this.legRRotatMat);
     matrixR = multMat(matrixR, this.legsRescaleMat);
@@ -1644,13 +1621,13 @@ class Robot {
   }
 }
 
-var robot = new Robot();
+let robot = new Robot();
 
 // LISTEN TO KEYBOARD
-var keyboard = new THREEx.KeyboardState();
+let keyboard = new THREEx.KeyboardState();
 
-var selectedRobotComponent = 0;
-var components = [
+let selectedRobotComponent = 0;
+let components = [
   "Torso",
   "Head",
   "Left Arm",
@@ -1662,16 +1639,16 @@ var components = [
   "Right Thigh",
   "Right Leg",
 ];
-var numberComponents = components.length;
+let numberComponents = components.length;
 
 //MOUSE EVENTS
-var raycaster = new THREE.Raycaster();
-var mouse = new THREE.Vector2();
-var sphere = null;
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+let sphere = null;
 
 document.addEventListener('mousemove', onMouseMove, false);
 
-var isRightButtonDown = false;
+let isRightButtonDown = false;
 
 function checkKeyboard() {
   // Next element
@@ -1847,21 +1824,21 @@ function checkKeyboard() {
   if (keyboard.pressed("f")) {
     isRightButtonDown = true;
 
-    var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+    let vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
 
     vector.unproject(camera);
 
-    var dir = vector.sub(camera.position).normalize();
+    let dir = vector.sub(camera.position).normalize();
 
     raycaster.ray.origin.copy(camera.position);
     raycaster.ray.direction.copy(dir);
 
-    var intersects = raycaster.intersectObjects(scene.children, true);
+    let intersects = raycaster.intersectObjects(scene.children, true);
 
     if (intersects.length > 0) {
       if (!sphere) {
-        var geometry = new THREE.SphereGeometry(0.1, 32, 32);
-        var material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        let geometry = new THREE.SphereGeometry(0.1, 32, 32);
+        let material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
         sphere = new THREE.Mesh(geometry, material);
         scene.add(sphere);
       }
@@ -1891,19 +1868,19 @@ function onMouseMove(event) {
 }
 
 function updateLookAtPosition() {
-  var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+  let vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
 
   vector.unproject(camera);
 
-  var dir = vector.sub(camera.position).normalize();
+  let dir = vector.sub(camera.position).normalize();
 
   raycaster.ray.origin.copy(camera.position);
   raycaster.ray.direction.copy(dir);
 
-  var intersects = raycaster.intersectObjects(scene.children.filter(obj => obj !== sphere), true);
+  let intersects = raycaster.intersectObjects(scene.children.filter(obj => obj !== sphere), true);
 
   if (intersects.length > 0) {
-    var intersect = intersects[0]
+    let intersect = intersects[0]
     sphere.position.copy(intersect.point);
     robot.look_at(intersect.point);
   }
